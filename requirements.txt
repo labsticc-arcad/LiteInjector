@@ -1,0 +1,7 @@
+sphinx==6.0
+sphinx-rtd-theme 
+ninja 
+meson==0.59
+sphinx-copybutton
+sphinx-favicon
+sphinxcontrib-images
