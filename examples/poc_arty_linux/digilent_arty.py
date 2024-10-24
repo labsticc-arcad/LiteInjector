@@ -14,6 +14,7 @@
 # - Clk Freq should be lowered: ex --sys-clk-freq=50e6
 
 import sys
+import json
 sys.path.append('../utils')
 
 from migen import *
@@ -37,6 +38,8 @@ from liteeth.phy.mii import LiteEthPHYMII
 
 from liteinjector import LiteInjector
 from litescope import LiteScopeAnalyzer
+
+from litex.tools.litex_json2dts_linux import generate_dts
 
 # CRG ----------------------------------------------------------------------------------------------
 
@@ -192,8 +195,34 @@ class BaseSoC(SoCCore):
         self.add_csr("analyzer")
 
         self.add_uartbone("liteinjector")
-# Build --------------------------------------------------------------------------------------------
 
+# DTS generation ---------------------------------------------------------------------------
+def create_dts(board_name):
+            json_src = "csr.json"
+            dts = "{}.dts".format(board_name)
+
+            with open(json_src) as json_file, open(dts, "w") as dts_file:
+                dts_content = generate_dts(json.load(json_file), polling=False)
+                dts_file.write(dts_content)
+
+# DTS compilation --------------------------------------------------------------------------
+def compile_dts(board_name, symbols=False):
+    dts = "{}.dts".format(board_name)
+    dtb = "{}.dtb".format(board_name)
+    subprocess.check_call(
+        "dtc {} -O dtb -o {} {}".format("-@" if symbols else "", dtb, dts), shell=True)
+
+# DTB combination --------------------------------------------------------------------------
+def combine_dtb(board_name, overlays=""):
+    dtb_in = "{}.dtb".format(board_name)
+    dtb_out = os.path.join("images", "rv32.dtb")
+    if overlays == "":
+        shutil.copyfile(dtb_in, dtb_out)
+    else:
+        subprocess.check_call(
+            "fdtoverlay -i {} -o {} {}".format(dtb_in, dtb_out, overlays), shell=True)
+
+# Build --------------------------------------------------------------------------------------------
 def main():
     from litex.soc.integration.soc import LiteXSoCArgumentParser
     parser = LiteXSoCArgumentParser(description="LiteX SoC on Arty A7")
@@ -249,6 +278,9 @@ def main():
     builder_kwargs = vivado_build_argdict(args) if args.toolchain == "vivado" else {}
     if args.build:
         builder.build(**builder_kwargs)
+        create_dts("digilent_arty")
+        compile_dts("digilent_arty", "")
+        combine_dtb("digilent_arty", "")
 
     if args.load:
         prog = soc.platform.create_programmer()
