@@ -27,6 +27,11 @@ var/
 *.egg-info/
 .installed.cfg
 *.egg
+prog/
+*.dtb
+*.dts
+*.csv
+*.json
 
 # PyInstaller
 #  Usually these files are written by a python script from a template

@@ -6,6 +6,7 @@ int main(void) {
     const char* correctPassword = "password123";
 
     printf("Enter the password: ");
+    fflush(stdout);
     fgets(password, sizeof(password), stdin);
 
     // Remove the newline character from the input
