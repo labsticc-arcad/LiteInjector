@@ -9,6 +9,9 @@ __pycache__/
 
 # C extensions
 *.so
+*.d
+*.o
+*.elf.map
 
 # Distribution / packaging
 .Python
