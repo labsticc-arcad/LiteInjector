@@ -11,3 +11,4 @@ In this section we will detail the 4 proofs of concept we have created. You can 
    vexriscv_sw.rst
    pmp_sw.rst
    pmp_hw.rst
+   linux.rst
