@@ -208,7 +208,7 @@ class _Injector(Module, AutoCSR):
         ]
 
 class LiteInjector(Module, AutoCSR):
-    def __init__(self, groups, depth, clock_domain="sys", trigger_depth=16, register=False, csr_csv="injector.csv"):
+    def __init__(self, groups, depth, clock_domain="sys", register=False, csr_csv="injector.csv"):
         self.groups     = groups = self.format_groups(groups)
         self.depth      = depth
 
@@ -237,7 +237,7 @@ class LiteInjector(Module, AutoCSR):
             ]
 
         # Frontend
-        self.submodules.trigger = _Trigger(data_width, depth=trigger_depth)
+        self.submodules.trigger = _Trigger(data_width, depth=depth)
         self.submodules.injector = _Injector(data_width)
 
         self.output = self.injector.output
