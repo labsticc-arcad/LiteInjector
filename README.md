@@ -1,16 +1,16 @@
 <div align="center">
 
 ```
-    __    _ __       ____        _           __            
-   / /   (_) /____  /  _/___    (_)__  _____/ /_____  _____
-  / /   / / __/ _ \ / // __ \  / / _ \/ ___/ __/ __ \/ ___/
- / /___/ / /_/  __// // / / / / /  __/ /__/ /_/ /_/ / /    
-/_____/_/\__/\___/___/_/ /_/_/ /\___/\___/\__/\____/_/     
-                          /___/                            
-
-
-A LiteX based tool for emulating logical faults on Systems on Chips
-
+              __    _ __       ____        _           __                       
+             / /   (_) /____  /  _/___    (_)__  _____/ /_____  _____           
+            / /   / / __/ _ \ / // __ \  / / _ \/ ___/ __/ __ \/ ___/           
+           / /___/ / /_/  __// // / / / / /  __/ /__/ /_/ /_/ / /               
+          /_____/_/\__/\___/___/_/ /_/_/ /\___/\___/\__/\____/_/                
+                                    /___/                                       
+                                                                                
+                                                                                
+      A LiteX based tool for emulating logical faults on Systems on Chips       
+                                                                                
 ```
 
 [![Ubtuntu](https://img.shields.io/badge/platform-Ubuntu%2020.04-0078d7.svg?style=for-the-badge&logo=appveyor)](https://www.ubuntu-fr.org) 
