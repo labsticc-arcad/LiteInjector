@@ -56,6 +56,8 @@ $ cd _build/html
 
 # :page_facing_up: Cite Us
 
+If you use this software in your work, please cite it using the following metadata.
+
 ```bibtex
 @INPROCEEDINGS{Henault2025LiteInjector,
   author={Henault, Adam and Tanguy, Philippe and Lapôtre, Vianney},
