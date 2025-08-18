@@ -1,15 +1,16 @@
 cff-version: 1.2.0
-message: "If you use this work, please cite the following paper."
-title: "LiteInjector: A LiteX Extension for Fault Injection"
+message: "If you use this software, please cite it as below."
 authors:
-  - family-names: "Henault"
-    given-names: "Adam"
-  - family-names: "Tanguy"
-    given-names: "Philippe"
-  - family-names: "Lapôtre"
-    given-names: "Vianney"
-date-released: "2025"
-type: conference-paper
+- family-names: "Henault"
+  given-names: "Adam"
+- family-names: "Tanguy"
+  given-names: "Philippe"
+- family-names: "Lapôtre"
+  given-names: "Vianney"
+title: "LiteInjector: A LiteX Extension for Fault Injection"
+version: 2.0.4
+date-released: 2025-09-10
+url: "https://github.com/labsticc-arcad/LiteInjector"
 conference:
   name: "28th Euromicro Conference on Digital System Design (DSD)"
   year: 2025
