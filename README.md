@@ -53,3 +53,14 @@ $ cd docs
 $ make html
 $ cd _build/html
 ```
+
+# :page_facing_up: Cite Us
+
+```bibtex
+@INPROCEEDINGS{Henault2025LiteInjector,
+  author={Henault, Adam and Tanguy, Philippe and Lapôtre, Vianney},
+  booktitle={2025 28th Euromicro Conference on Digital System Design (DSD)}, 
+  title={LiteInjector: A LiteX Extension for Fault Injection}, 
+  year={2025}
+}
+```
