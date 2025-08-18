@@ -12,12 +12,12 @@ url: "https://github.com/labsticc-arcad/LiteInjector"
 preferred-citation:
   type: conference-paper
   authors:
-- family-names: "Henault"
-  given-names: "Adam"
-- family-names: "Tanguy"
-  given-names: "Philippe"
-- family-names: "Lapôtre"
-  given-names: "Vianney"
+  - family-names: "Henault"
+    given-names: "Adam"
+  - family-names: "Tanguy"
+    given-names: "Philippe"
+  - family-names: "Lapôtre"
+    given-names: "Vianney"
   name: "28th Euromicro Conference on Digital System Design (DSD)"
   title: "LiteInjector: A LiteX Extension for Fault Injection"
   year: 2025
