@@ -8,9 +8,8 @@ authors:
 - family-names: "Lapôtre"
   given-names: "Vianney"
 title: "LiteInjector: A LiteX Extension for Fault Injection"
-version: 2.0.4
-date-released: 2025-09-10
 url: "https://github.com/labsticc-arcad/LiteInjector"
+type: conference-paper
 conference:
   name: "28th Euromicro Conference on Digital System Design (DSD)"
   year: 2025
