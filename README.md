@@ -69,7 +69,9 @@ Tests run in simulation, no FPGA needed: `python3 -m pytest test`.
 
 LiteInjector is developed by the ARCAD team of the [Lab-STICC](https://labsticc.fr) laboratory (Lorient, France). It builds on [LiteX](https://github.com/enjoy-digital/litex) and [LiteScope](https://github.com/enjoy-digital/litescope) by Enjoy-Digital.
 
-Parts of this project, including the refactoring of the gateware and host software, the tests, the documentation website and its diagrams, were developed with the assistance of AI tools ([Claude Code](https://www.anthropic.com/claude-code) by Anthropic). This work was directed and reviewed by the authors, who remain responsible for its content.
+## Use of AI
+
+AI assistance was used in this project, for code, tests and documentation. The authors reviewed the result and remain responsible for it.
 
 ## License
 
