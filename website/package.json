@@ -1,0 +1,19 @@
+{
+  "name": "liteinjector-website",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "api": "cd .. && python -m pdoc liteinjector.software --docformat restructuredtext -o website/public/api",
+    "build:all": "npm run api && astro build"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.42.8",
+    "astro": "^7.2.10",
+    "sharp": "^0.35.3"
+  },
+  "private": true
+}

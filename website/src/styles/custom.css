@@ -1,0 +1,12 @@
+/* The figures are drawn for a white background: keep them readable in dark mode. */
+.sl-markdown-content img,
+.hero img {
+	background: #ffffff;
+	border-radius: 0.5rem;
+	padding: 0.75rem;
+}
+
+.sl-markdown-content img {
+	display: block;
+	margin-inline: auto;
+}

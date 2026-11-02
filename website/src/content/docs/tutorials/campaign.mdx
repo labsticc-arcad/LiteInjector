@@ -1,0 +1,103 @@
+---
+title: Run an injection campaign
+description: Flip every bit of an instruction in turn, observe the target over UART and analyze the results.
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+In the [BIOS password tutorial](../bios-password/), one instruction is replaced by a chosen opcode. A physical attacker rarely controls the faulted value that precisely: a more realistic model is a **single bit flip**. Which bits of the instruction, once flipped, bypass the password check?
+
+Answering this by hand means 32 attacks. A **campaign** runs them all, observes the BIOS answer after each fault, and writes a report.
+
+**You need:** the SoC of the [BIOS password tutorial](../bios-password/), built and loaded, and **two** serial ports on the host: the UART bridge used by `litex_server`, and the BIOS console.
+
+## The campaign file
+
+The example is in [`examples/poc_basys3_vexriscv/campaign.toml`](https://github.com/labsticc-arcad/LiteInjector/blob/main/examples/poc_basys3_vexriscv/campaign.toml):
+
+```toml
+[campaign]
+name   = "bios-unlock-bitflip"
+repeat = 1
+output = "bios_unlock_results.csv"
+
+[sweep]
+bit = "0..31"
+
+[[step]]
+when   = { ibus_adr = "0x0000037A" }
+offset = 1
+fault  = { model = "bit-flip", signal = "ibus_dat_r", bits = "{bit}" }
+
+[target]
+uart    = "/dev/ttyUSB0"     # BIOS console of the SoC (not the UART bridge), change to your port.
+send    = "unlock aaaa\n"
+success = "Access granted"
+failure = "Access refused"
+timeout = 2.0
+```
+
+- `[sweep]` defines the parameters of the campaign. `bit` takes the values 0 to 31, and `{bit}` is replaced in the steps for each run.
+- `[[step]]` is a trigger, with the same fields as the command line. Several steps make a multi-fault attack.
+- `[target]` tells how to make the target run and how to read the result: for each run, LiteInjector is armed, `send` is written on the BIOS console, and the answer is matched against the `success` and `failure` patterns.
+
+## Run it
+
+<Steps>
+
+1. Start `litex_server` on the UART bridge, in its own terminal.
+
+    ```console
+    $ litex_server --uart --uart-port /dev/ttyUSB1
+    ```
+
+2. Set the BIOS console port in the `[target]` section, and close `litex_term` if it uses this port.
+
+3. Check the campaign without hardware. Every run is encoded and printed.
+
+    ```console
+    $ cd liteinjector/examples/poc_basys3_vexriscv
+    $ liteinjector_cli campaign campaign.toml --dry-run
+    ```
+
+4. Run it.
+
+    ```console
+    $ liteinjector_cli campaign campaign.toml
+    ```
+
+</Steps>
+
+## Read the results
+
+Every run gets an outcome:
+
+| Outcome | Meaning |
+|---|---|
+| `success` | The `success` pattern was seen: the check was bypassed. |
+| `no-effect` | The `failure` pattern was seen: the software behaved normally. |
+| `crash` | A `crash` pattern was seen (optional patterns, e.g. a trap message). |
+| `timeout` | Nothing recognized before the timeout: the software hung or crashed silently. |
+| `not-injected` | The emulator did not inject any fault: check the trigger. |
+
+The CSV file has one line per run with the sweep parameters, the outcome, the hit and fault counters, the cycle of the fault, the instruction before and after the fault (`capture_before`, `capture_after`) and the end of the console output. It can be loaded in any spreadsheet, or with pandas:
+
+```python
+import pandas as pd
+
+df = pd.read_csv("bios_unlock_results.csv")
+print(df["outcome"].value_counts())
+print(df[df.outcome == "success"][["params", "capture_before", "capture_after"]])
+```
+
+<Aside title="After a crash">
+A fault that crashes the BIOS leaves it in a bad state for the next runs. Add `reset = true` to `[target]` to reset the SoC through its `ctrl_reset` register before every run.
+</Aside>
+
+## Variations
+
+- **Random faults**: use `model = "bit-flip-random"` with `bits = "0-31"` and `repeat = 100`. Every run flips a new random set of bits, set `seed` in `[campaign]` to make the campaign reproducible.
+- **Timing**: sweep the offset instead of the bit, e.g. `offset = "0..4"` in `[sweep]` and `offset = "{offset}"` in the step.
+- **Linux targets**: replace `uart`/`send` by a `command`, for example a program run over `ssh`.
+
+All the fields are described in the [campaign file reference](../../reference/campaign-file/).

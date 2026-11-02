@@ -1,0 +1,22 @@
+---
+title: Software controller
+description: The layers of the LiteInjector host software, from the CSRs to the campaigns.
+---
+
+The host software controls the emulator through `litex_server`. It is organized in layers, each usable and tested on its own:
+
+| Layer | Module | Role |
+|---|---|---|
+| Layout | `liteinjector.software.layout` | Reads `injector.csv`: probed signals, groups, capabilities and version of the core. Resolves short signal names. |
+| Model | `liteinjector.software.model` | Describes an injection: `Trigger` (conditions, offset, duration) and `Fault` (model, signal, bits or value). |
+| Encoder | `liteinjector.software.encoder` | Translates a `Trigger` into the words of a hardware trigger entry. Fault models are functions in a registry. |
+| Driver | `liteinjector.software.driver.injector` | The only module that reads and writes the CSRs of the core. |
+| Client | `liteinjector.software.client` | Python API: connect, inject, wait, read the status. |
+| Campaign | `liteinjector.software.campaign` | Sweeps, repetitions, observation of the target, results. |
+| CLI | `liteinjector_cli` | Command line front-end of all the above. |
+
+The encoder is pure computation: any trigger, and any campaign, can be checked and printed with `--dry-run` without hardware.
+
+The configuration CSV carries the **version** of the core. The host software refuses to drive a SoC built with an incompatible core instead of writing wrong values: rebuild the SoC when you update LiteInjector.
+
+Learn more in the [command line](../../reference/cli/), [campaign files](../../reference/campaign-file/) and [Python API](../../reference/python-api/) references.

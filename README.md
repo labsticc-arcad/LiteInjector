@@ -28,7 +28,7 @@ LiteInjector is an open source logic fault injection tool designed for security 
 - Seamless integration with LiteX / Migen-based SoCs
 - Logic fault injection with 5 supported fault models (bit set, reset, flip, random flip, write)
 - Event-based trigger system with dynamic masking (value match, rising/falling edge, configurable delay)
-- CLI and Python API for automating injection campaigns
+- CLI, Python API and campaign runner (sweeps, target observation, CSV reports)
 - Up to **210× faster** than traditional RTL simulation
 
 ### 🔧 Usage
@@ -43,22 +43,30 @@ LiteInjector integrates as a hardware module into the SoC and is configured via 
 
 # :rocket: Getting Started
 
-### Generate the documentation
+### Documentation and tutorials
+
+The documentation, tutorials and references are in the [`website`](website) folder (Astro Starlight). To browse them locally (requires Node.js):
 
 ```console
 $ git clone https://github.com/labsticc-arcad/LiteInjector.git
-$ cd LiteInjector
-$ pip3 install -r docs/requirements.txt
-$ cd docs
-$ make html
-$ cd build/html
+$ cd LiteInjector/website
+$ npm install
+$ npm run dev
 ```
 
-The installation of LiteX and LiteInjector is described in the documentation (*Installation* section).
+The installation of LiteX and LiteInjector is described in the *Installation* page.
+
+### Quick look
+
+```console
+$ liteinjector_cli info
+$ liteinjector_cli run --when ibus_adr=0x0000037A --offset 1 --fault bit-value:ibus_dat_r=0x00050C63 --wait 5
+$ liteinjector_cli campaign examples/poc_basys3_vexriscv/campaign.toml
+```
 
 ### Run the tests
 
-The gateware is tested in simulation with Migen, no FPGA is needed (requires LiteX and `pytest`):
+The gateware and the host software are tested in simulation with Migen, no FPGA is needed (requires LiteX and `pytest`):
 
 ```console
 $ python3 -m pytest test

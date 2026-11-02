@@ -1,0 +1,88 @@
+---
+title: Campaign files
+description: Reference of the TOML/JSON campaign file format.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+A campaign file describes one or more triggers, the parameters to sweep, and how to observe the target. It is written in TOML (Python 3.11+, or the `tomli` package) or JSON. See the [campaign tutorial](../../tutorials/campaign/) for a complete example.
+
+## `[campaign]`
+
+| Field | Default | Description |
+|---|---|---|
+| `name` | `"campaign"` | Name, also used for the default results file `<name>_results.csv`. |
+| `repeat` | `1` | Runs for each combination of the sweep. |
+| `group` | `0` | Signal group. |
+| `seed` | | Seed of the random generator, `seed + run index` is used for each run. |
+| `output` | | Results file, `.csv` or `.json` (JSON lines). |
+
+## `[sweep]`
+
+Each key is a parameter, every combination of the values is run. A value is:
+
+- an inclusive range: `"0..31"`, with a step: `"0x100..0x1F0:0x10"`;
+- a list: `[1, 2, 5]`;
+- a single value.
+
+`{name}` placeholders are replaced in the steps. A field that is only a placeholder keeps the type of the value (`offset = "{offset}"` gives a number), placeholders inside a string are formatted (`"0x{addr:08x}"`).
+
+## `[[step]]`
+
+A trigger. Several steps are chained: the second one is armed once the first fault has been applied.
+
+| Field | Description |
+|---|---|
+| `when` | Value conditions: `{ signal = "value" }`, `x` digits are "don't care". |
+| `rising` | Rising edge conditions: `{ signal = [bits] }`, `"all"` for every bit. |
+| `falling` | Falling edge conditions. |
+| `offset` | Cycles between the condition and the fault (default 0). |
+| `duration` | Number of faulted cycles (default 1). |
+| `fault` | One fault: `{ model = "...", signal = "...", bits = ..., value = "..." }`. |
+| `faults` | A list of faults applied together. |
+
+`bits` is an integer, a list, a string such as `"0,2"` or `"4-7"`, or omitted for all the bits of the signal. `value` is used by `bit-value`.
+
+## `[target]`
+
+How to make the target run after arming, and how to classify the result. Without `[target]`, a run is classified `injected` or `not-injected` from the fault counter.
+
+| Field | Default | Description |
+|---|---|---|
+| `uart` | | Serial port of the target console (not the UART bridge). |
+| `baudrate` | `115200` | Baud rate of `uart`. |
+| `send` | | Text written on `uart` after arming. |
+| `command` | | Command run after arming instead of `uart`/`send`, e.g. over `ssh`. |
+| `success` | | Regex, or list of regexes: attack goal reached. |
+| `failure` | | Regex(es): normal behaviour, the fault had no effect. |
+| `crash` | | Regex(es): the target crashed. |
+| `timeout` | `2.0` | Seconds to wait for a recognized output. |
+| `reset` | `false` | Reset the SoC (`ctrl_reset` CSR) before each run. |
+| `reset_delay` | `0.5` | Seconds to wait after the reset. |
+| `settle` | | Seconds to wait between arming and the stimulus. |
+
+Outcomes: `success`, `no-effect`, `crash`, `timeout`, `not-injected` (no fault applied), `injected` (no observation configured).
+
+## `[connection]`
+
+Optional defaults for `host`, `port`, `csr_csv` and `config_csv`. Command line options take precedence.
+
+## Results
+
+One row per run, written as soon as the run ends:
+
+| Column | Description |
+|---|---|
+| `run`, `repetition` | Run index, repetition index. |
+| `params` | Sweep parameters (JSON). |
+| `outcome` | See above. |
+| `injected` | At least one fault was applied. |
+| `hit_count`, `fault_count` | Trigger hits and faults counted by the core. |
+| `hit_timestamp` | Cycle of the last fault, counted from arming. |
+| `capture_before`, `capture_after` | Probed data word before and after the last fault. |
+| `duration_s` | Duration of the run. |
+| `output` | End of the target output. |
+
+<Aside>
+`liteinjector_cli campaign FILE --dry-run` checks every run (signal names, bit ranges, offsets) and prints the encoded triggers without hardware.
+</Aside>

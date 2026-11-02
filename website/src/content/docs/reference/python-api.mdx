@@ -1,0 +1,86 @@
+---
+title: Python API
+description: Script injections and campaigns from Python.
+---
+
+import { LinkCard } from '@astrojs/starlight/components';
+
+The command line is built on a Python API that can be used directly in scripts.
+
+## Inject
+
+```python
+from liteinjector.software import LiteInjectorClient, Trigger, Fault
+
+with LiteInjectorClient(host="localhost", port=1234, csr_csv="csr.csv", config_csv="injector.csv") as inj:
+    inj.inject([
+        Trigger(when={"ibus_adr": "0x0000037A"}, offset=1,
+                faults=[Fault("bit-value", "ibus_dat_r", value="0x00050C63")]),
+    ])
+    inj.wait(timeout=5)
+    print(inj.status())
+```
+
+- `inject(triggers, group=0, seed=None)` disarms, clears the pending triggers, writes the new ones and arms.
+- `configure(...)` does the same without arming, `arm()`, `disarm()`, `clear()`, `wait(timeout)`, `status()` and `reset_target()` are also available.
+- A list of triggers is a multi-fault attack: they are applied one after the other.
+
+## Describe triggers
+
+```python
+Trigger(
+    when     = {"sig": "0x3x"},          # value conditions, "x" digits are "don't care"
+    rising   = {"irq": [0]},             # rising edges on some bits (None: all bits)
+    falling  = {},
+    offset   = 2,                        # cycles between the condition and the fault
+    duration = 1,                        # faulted cycles
+    faults   = [Fault("bit-flip", "data", bits=[0, 3]),
+                Fault("bit-value", "flag", value="0x1")],
+)
+```
+
+`Trigger.from_dict()` and `Fault.parse("bit-flip:data:0,3")` read the same formats as the campaign files and the command line.
+
+## Check without hardware
+
+```python
+from liteinjector.software import Layout, encode
+
+layout = Layout.from_csv("injector.csv")
+entry = encode(trigger, layout)   # raises ValueError for unknown signals, bits out of range...
+print(entry)
+```
+
+## Run a campaign
+
+```python
+from liteinjector.software import LiteInjectorClient, Campaign, CampaignRunner
+from liteinjector.software.campaign import ResultWriter
+
+campaign = Campaign.from_file("campaign.toml")
+with LiteInjectorClient() as inj:
+    summary = CampaignRunner(inj, campaign, writer=ResultWriter("results.csv")).run()
+print(summary)
+```
+
+A custom observer (for example one that reads a GPIO, or talks to a debugger) can be passed to `CampaignRunner`: subclass `liteinjector.software.campaign.Observer` and implement `observe()`, which returns an outcome and the text output.
+
+## Add a fault model
+
+The hardware applies `((data & fault_and) | fault_or) ^ fault_xor`, so a new fault model is a function that updates these vectors:
+
+```python
+from liteinjector.software import fault_model
+
+@fault_model("stuck-at-0")
+def stuck_at_0(fault, layout, group, v):
+    v.fault_and &= ~layout.bits_mask(fault.signal, fault.bits, group) & v.all_ones
+```
+
+The new model is then available in `Fault(...)`, campaign files and `liteinjector_cli run --fault stuck-at-0:SIGNAL:BITS` (once the module defining it is imported).
+
+## Generated reference
+
+The reference of every module, class and function is generated from the docstrings with [pdoc](https://pdoc.dev) by `npm run api` in the `website` folder.
+
+<LinkCard title="Python API reference" description="Generated from the source code." href="../../api/liteinjector/software.html" />

@@ -1,0 +1,94 @@
+---
+title: Command line
+description: Reference of liteinjector_cli, its commands and options.
+---
+
+`liteinjector_cli` drives the emulator through `litex_server`. It needs two files written by the SoC build.
+
+## Common options
+
+| Option | Default | Description |
+|---|---|---|
+| `--host` | `localhost` | Host running `litex_server`. |
+| `--port` | `1234` | `litex_server` port. |
+| `--csr-csv` | `csr.csv` | CSR map of the SoC (`--csr-csv` of the SoC build). |
+| `--csv` | `injector.csv` | LiteInjector configuration (`csr_csv` argument of `LiteInjector`). |
+| `--debug` | | Print the triggers written to the core. |
+
+Signal names can be shortened as long as they stay unambiguous (`ibus_dat_r` for `main_basesoc_ibus_dat_r`).
+
+Exit codes: `0` success, `1` error, `2` timeout of `run --wait` or `wait`.
+
+## `info`
+
+Version and capabilities of the core: data width, trigger queue depth, maximum offset and duration, available fault models. Reads `injector.csv` only. `--json` for a machine readable output.
+
+## `list`
+
+Probed signals of a group with their width and position in the data word. `--group N` selects the group, `--names-only` prints only the names.
+
+## `run`
+
+Configure one injection and arm the emulator. The pending triggers are cleared first.
+
+| Option | Description |
+|---|---|
+| `--when SIGNAL=VALUE` | Value condition. `x` digits are "don't care": `0x3x`, `0b1x0`. Repeat for several signals. |
+| `--rise SIGNAL[:BITS]` | Rising edge condition on some bits (all bits if omitted). |
+| `--fall SIGNAL[:BITS]` | Falling edge condition. |
+| `--fault MODEL:SIGNAL[:BITS]` | Fault on some bits of a signal (all bits if omitted). BITS: `3`, `0,2`, `4-7`. Repeat to combine faults. |
+| `--fault bit-value:SIGNAL=VALUE` | Replace a signal by a value, `x` digits keep the original bits. |
+| `--offset N` | Cycles between the condition and the fault (default 0). |
+| `--duration N` | Number of faulted cycles (default 1). |
+| `--group N` | Signal group (default 0). |
+| `--seed N` | Seed of the random generator for `bit-flip-random`. |
+| `--wait SECONDS` | Wait until the fault is applied, then print the status. |
+| `--dry-run` | Print the encoded trigger without connecting. |
+| `--json` | Status as JSON. |
+
+Fault models: `bit-set`, `bit-reset`, `bit-flip`, `bit-flip-random`, `bit-value`.
+
+`run FILE` takes the triggers from the `[[step]]` sections of a [campaign file](../campaign-file/) without sweep: use it for multi-fault attacks.
+
+```console
+$ liteinjector_cli run --when ibus_adr=0x0000037A --offset 1 --fault bit-value:ibus_dat_r=0x00050C63
+$ liteinjector_cli run --rise irq:0 --offset 10 --duration 3 --fault bit-flip:pc:2,3
+$ liteinjector_cli run attack.toml --wait 10
+```
+
+## `status`
+
+Armed, done, busy, number of hits and faults, cycle of the last fault since arming, data before and after the last fault. `--json` available.
+
+## `wait`
+
+Wait until every trigger has fired (`--timeout SECONDS`), then print the status.
+
+## `disarm`
+
+Disarm the emulator and clear the pending triggers.
+
+## `campaign`
+
+Run a [campaign file](../campaign-file/).
+
+| Option | Description |
+|---|---|
+| `--dry-run` | Check and print every run without connecting. |
+| `--output FILE` | Results file (`.csv`, or `.json` for JSON lines), overrides the campaign file. |
+| `--send TEXT` | Override the stimulus sent to the target (`\n` escapes allowed). |
+
+## v1 syntax
+
+The syntax of the first versions is still accepted:
+
+| v1 option | Equivalent |
+|---|---|
+| `-v SIGNAL VALUE ID` | `--when SIGNAL=VALUE` |
+| `-r SIGNAL BIT ID` / `-f SIGNAL BIT ID` | `--rise SIGNAL:BIT` / `--fall SIGNAL:BIT` |
+| `-o VALUE ID` | `--offset VALUE` |
+| `-bs`, `-br`, `-bf`, `-bfr SIGNAL BITS ID` | `--fault bit-set\|bit-reset\|bit-flip\|bit-flip-random:SIGNAL:BITS` |
+| `-bv SIGNAL VALUE ID` | `--fault bit-value:SIGNAL=VALUE` |
+| `-l` | `list --names-only` |
+
+`ID` groups the options of a trigger, the triggers are chained in the order of their IDs. BITS can be written `[]` (all bits), `[1,2]` or `{12}`.

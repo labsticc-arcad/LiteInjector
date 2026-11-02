@@ -42,6 +42,7 @@ prog/
 *.csv
 *.json
 !examples/poc_arty_linux/images/boot.json
+!website/*.json
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -79,9 +80,11 @@ instance/
 # Scrapy stuff:
 .scrapy
 
-# Sphinx documentation
-docs/_build/
-docs/build/
+# Website (Astro)
+website/node_modules/
+website/dist/
+website/.astro/
+website/public/api/
 
 # PyBuilder
 target/

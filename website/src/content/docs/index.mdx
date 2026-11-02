@@ -1,0 +1,107 @@
+---
+title: LiteInjector
+description: Open source fault injection emulator for LiteX Systems on Chip. Inject bit-accurate, cycle-accurate faults on FPGA, up to 210x faster than RTL simulation.
+template: splash
+hero:
+  tagline: Emulate fault injection attacks on your LiteX SoC, directly on FPGA. Bit-accurate, cycle-accurate, and up to 210× faster than RTL simulation.
+  image:
+    file: ../../assets/figures/liteinjector_overview.svg
+    alt: A LiteX SoC with LiteInjector on the instruction bus, controlled from the host.
+  actions:
+    - text: Get started
+      link: start/introduction/
+      icon: right-arrow
+    - text: Try a tutorial
+      link: tutorials/bios-password/
+      variant: secondary
+    - text: View on GitHub
+      link: https://github.com/labsticc-arcad/LiteInjector
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid, LinkCard, Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+import { Image } from 'astro:assets';
+import biosResult from '../../assets/figures/poc_bios_result.png';
+import vp0Result from '../../assets/figures/vp0_result.png';
+
+## Why LiteInjector
+
+Evaluating countermeasures against fault injection attacks usually means long RTL simulation campaigns, or physical attack benches. LiteInjector instruments your design instead: the faults are emulated in the FPGA, on the real SoC running real software, and every attack parameter can be changed at runtime from the host.
+
+<CardGrid stagger>
+	<Card title="Any signal of your SoC" icon="puzzle">
+		Probe any Migen signal, or any instrumented signal of a Verilog IP, with a few lines added to a LiteX SoC.
+	</Card>
+	<Card title="Precise triggers" icon="seti:clock">
+		Trigger on values with "don't care" bits, rising and falling edges, then delay the fault by a number of clock cycles.
+	</Card>
+	<Card title="Five fault models, combinable" icon="setting">
+		Bit set, bit reset, bit flip, random bit flip and value replacement, on one or several signals in the same cycle, for one or more cycles.
+	</Card>
+	<Card title="Multi-fault attacks" icon="list-format">
+		Chain triggers to fault the same execution several times, without rebuilding the bitstream.
+	</Card>
+	<Card title="Campaigns built in" icon="rocket">
+		Sweep bits, offsets or addresses, observe the target over UART, and get a CSV report of every run.
+	</Card>
+	<Card title="Light and open" icon="open-book">
+		Small FPGA footprint, BSD-2-Clause license, written in Python with Migen like LiteX itself.
+	</Card>
+</CardGrid>
+
+## How it works
+
+<Steps>
+
+1. **Add LiteInjector to your SoC** and choose the signals to probe: the instruction bus, a security flag, a protection signal...
+
+    ```python
+    self.submodules.injector = LiteInjector([ibus.adr, ibus.dat_r], depth=16, csr_csv="injector.csv")
+    self.add_uartbone("liteinjector")
+    ```
+
+2. **Describe the attack from the host**: when to inject, and which fault to apply.
+
+    ```console
+    $ liteinjector_cli run --when ibus_adr=0x0000037A --offset 1 \
+          --fault bit-value:ibus_dat_r=0x00050C63 --wait 5
+    ```
+
+3. **Observe the result**, or let a campaign sweep the parameters and classify every run.
+
+    ```console
+    $ liteinjector_cli campaign campaign.toml
+    Campaign 'bios-unlock-bitflip': 32 run(s).
+    [1/32] {'bit': 0} -> <outcome>
+    ...
+    Results written to bios_unlock_results.csv
+    ```
+
+</Steps>
+
+## Proven on real attacks
+
+<Tabs>
+	<TabItem label="BIOS password bypass">
+		A single instruction is replaced on the instruction bus of a VexRiscv CPU, and the BIOS accepts a wrong password.
+
+		<Image src={biosResult} alt="LiteX BIOS console: unlock refused without fault, granted with fault." />
+	</TabItem>
+	<TabItem label="VerifyPIN on Linux">
+		A branch of a PIN verification program running on Linux is inverted from the peripheral bus.
+
+		<Image src={vp0Result} alt="Linux console: verifypin_0 authenticated with a wrong PIN under fault injection." />
+	</TabItem>
+</Tabs>
+
+<CardGrid>
+	<LinkCard title="Bypass a BIOS password" description="Replace one instruction on the CPU instruction bus." href="tutorials/bios-password/" />
+	<LinkCard title="Bypass PMP memory protection" description="From the instruction bus, or inside the CPU." href="tutorials/pmp-software/" />
+	<LinkCard title="VerifyPIN on Linux" description="Fault a program running on a VexRiscv SMP Linux." href="tutorials/linux-verifypin/" />
+	<LinkCard title="Run a campaign" description="Sweep every bit of an instruction and get a report." href="tutorials/campaign/" />
+</CardGrid>
+
+## Research
+
+LiteInjector is developed by the ARCAD team of the [Lab-STICC](https://labsticc.fr) laboratory in Lorient, France, and was presented at the 28th Euromicro Conference on Digital System Design (DSD 2025). If you use it in your work, please [cite it](cite/).

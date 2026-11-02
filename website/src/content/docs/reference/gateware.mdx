@@ -1,0 +1,76 @@
+---
+title: Gateware
+description: Parameters, outputs, registers and configuration file of the LiteInjector core.
+---
+
+## `LiteInjector`
+
+```python
+from liteinjector import LiteInjector
+
+self.submodules.injector = LiteInjector(groups, depth=16, csr_csv="injector.csv")
+self.add_csr("injector")
+```
+
+| Parameter | Default | Description |
+|---|---|---|
+| `groups` | | Signals to probe: a list of signals, or a dict `{group: [signals]}`. Records and FSMs are accepted. |
+| `depth` | | Number of triggers in the queue. |
+| `clock_domain` | `"sys"` | Clock domain of the probed signals. The registers stay in `sys`, the trigger system runs in this domain. |
+| `register` | `False` | Register the probed signals before the core (better timing, one cycle of latency). |
+| `csr_csv` | `"injector.csv"` | Configuration file written at the end of the build, `None` to disable it. |
+| `offset_depth` | `500` | Maximum offset, in cycles. |
+| `duration_depth` | `255` | Maximum fault duration, in cycles. |
+| `with_lfsr` | `True` | Hardware random generator for `bit-flip-random`. |
+
+## Outputs
+
+| Attribute | Description |
+|---|---|
+| `o_<signal>` | Faulted copy of each probed signal, to connect in place of the original. |
+| `output` | Faulted data word. |
+| `trigger.trigger_hit` | Condition of the current trigger met. |
+| `trigger.output_hit` | Fault applied on this cycle. |
+| `trigger.inject_start` | First cycle of a fault. |
+| `trigger.offset` | Offset of the current trigger. |
+| `injector.sink.fault_and/or/xor` | Fault vectors of the current trigger. |
+
+## Registers
+
+Names as seen from the host (prefixed by the name of the core in the SoC, e.g. `injector_`).
+
+| Register | Access | Description |
+|---|---|---|
+| `mux_value` | RW | Selected group. |
+| `trigger_enable` | RW | Arm (1) or disarm (0). |
+| `trigger_clear` | W | Flush the queue, reset the counters, reload the random seed. |
+| `trigger_seed` | RW | Seed of the random generator. |
+| `trigger_mem_mask`, `trigger_mem_value` | RW | Value condition of the next entry. |
+| `trigger_mem_r_edge_mask`, `trigger_mem_f_edge_mask` | RW | Edge conditions. |
+| `trigger_mem_fault_and`, `_or`, `_xor` | RW | Fault vectors. |
+| `trigger_mem_offset`, `trigger_mem_duration` | RW | Offset and duration. |
+| `trigger_mem_flags` | RW | Bit 0: random bit flip. |
+| `trigger_mem_write` | W | Push the entry in the queue. |
+| `trigger_mem_full` | R | Queue full. |
+| `trigger_done` | R | Queue empty and no fault in progress. |
+| `trigger_busy` | R | Waiting for an offset, injecting or flushing. |
+| `trigger_hit_count`, `trigger_fault_count` | R | Trigger hits and faults since the last clear. |
+| `trigger_hit_timestamp` | R | Cycle of the last fault, counted from arming. |
+| `capture_before`, `capture_after` | R | Data word before and after the last fault. |
+
+## Configuration file
+
+The configuration file (`injector.csv`) describes the core for the host tools:
+
+```text
+config,None,version,2
+config,None,data_width,62
+config,None,depth,16
+config,None,offset_depth,500
+config,None,duration_depth,255
+config,None,lfsr,1
+signal,0,main_basesoc_ibus_adr,30
+signal,0,main_basesoc_ibus_dat_r,32
+```
+
+`version` is checked by the host software: rebuild the SoC when you update LiteInjector.

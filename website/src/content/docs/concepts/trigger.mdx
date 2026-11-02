@@ -1,0 +1,54 @@
+---
+title: Trigger system
+description: How LiteInjector detects events, delays the fault and chains several triggers.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The trigger system decides **when** a fault is applied. Its condition logic comes from LiteScope, extended to detect values and edges at the same time, to delay the fault, and to chain several triggers.
+
+## Conditions with masks
+
+A condition compares the data word with an expected value through a mask: the mask selects the bits to check, so a condition can target a whole signal, a few bits, or several signals at once. In the host tools, a value such as `0x3x` or `0b1x0` sets the mask automatically: `x` digits are not checked.
+
+![Event detection: the mask is applied to the data and to the expected value, then both are compared.](../../../assets/figures/comparator_arch.svg)
+
+The same masking is used for edges. Each bit of the data word has a rising edge and a falling edge detector (the bit is compared with its value on the previous cycle), and the trigger selects the bits on which an edge is required.
+
+A trigger fires on the cycle where **all** its conditions are true:
+
+```text
+hit = (data    & mask)        == (value & mask)
+    & (rising  & rising_mask)  == rising_mask
+    & (falling & falling_mask) == falling_mask
+```
+
+A trigger needs at least one condition, a trigger without any condition never fires.
+
+## Offset and duration
+
+Once the condition is met, the fault can be applied:
+
+- on the **same cycle** (offset 0): the faulted data is the data that matched;
+- **N cycles later** (offset N, up to `offset_depth`, 500 by default): for example one cycle after an address is presented on a bus, when the corresponding data comes back;
+- for **several consecutive cycles** (duration, up to `duration_depth`, 255 by default).
+
+The offset is counted from the first cycle where the condition is met; other matches while waiting are ignored.
+
+## Trigger queue and multi-fault
+
+![Architecture of the trigger system.](../../../assets/figures/trigger_arch.svg)
+
+The triggers are stored in a FIFO written by the host through CSRs. Each entry holds the conditions, the offset, the duration and the fault to apply. The trigger system uses the first entry, and consumes it once its fault has been applied; the next entry then becomes active. A sequence of entries therefore describes a **multi-fault attack**: fault the first event, then wait for the second one, and so on. The number of entries is set by the `depth` parameter of the core.
+
+<Aside>
+The diagrams show the general structure of the trigger system. In the current version, the fault description stored in each entry is the generic `fault_and` / `fault_or` / `fault_xor` vectors described in [Fault injector](../injector/), plus the duration and flags.
+</Aside>
+
+## Control and status
+
+The host can:
+
+- **arm** and **disarm** the trigger system;
+- **clear** it: the pending triggers are flushed, the counters are reset and the random generator is reseeded;
+- read the **status**: `done` when every trigger has fired, `busy` while waiting for an offset or applying a fault, the number of **hits** and of **faults**, the **cycle of the last fault** counted from arming, and the probed data **before and after** the last fault.

@@ -1,0 +1,36 @@
+---
+title: Introduction
+description: What fault emulation is, why it is faster than simulation, and where LiteInjector fits.
+---
+
+## Fault emulation
+
+Fault injection deliberately introduces errors in a system to evaluate how it behaves: either to test its reliability under abnormal conditions, or to test its resistance to **fault injection attacks** (voltage or clock glitches, electromagnetic or laser pulses) that try to skip an instruction, corrupt a register or bypass a security check.
+
+Before such a system exists in silicon, the usual way to study faults is **RTL simulation**: every signal is under control, a fault can be injected anywhere, but simulating a complete System on Chip running its software is slow, and large campaigns can take days or simply be out of reach.
+
+**Fault emulation** runs the design on an FPGA instead. The points of interest are chosen in advance and instrumented with injection points, then the faults are injected while the real SoC runs at hardware speed. Campaigns that need thousands of runs become practical.
+
+| | RTL simulation | Fault emulation |
+|---|---|---|
+| Where faults can be injected | Anywhere | Instrumented signals |
+| Speed | Slow, full SoC with software is very slow | Hardware speed, up to 210× faster in our measurements |
+| Software under test | Short programs | Bootloaders, bare-metal code, Linux |
+| Changing the attack | Re-run the simulation | Reconfigured at runtime from the host |
+
+## LiteX and LiteInjector
+
+[LiteX](https://github.com/enjoy-digital/litex) is an open source framework to build Systems on Chip in Python with [Migen](https://m-labs.hk/gateware/migen/). It provides CPUs, buses, peripherals and the tools to build, load and control SoCs on most FPGA boards.
+
+LiteInjector is a LiteX extension that adds fault injection to these SoCs. It is inspired by [LiteScope](https://github.com/enjoy-digital/litescope), the LiteX logic analyzer, and integrates the same way: you list the signals to probe, LiteInjector sits on their path, and a host tool configures it through `litex_server`.
+
+- **Hardware side**: a small Migen core that watches the probed signals, detects the configured events and modifies the signals on the selected clock cycles.
+- **Host side**: a command line client, a Python API and a campaign runner to automate the attacks and collect the results.
+
+Because the SoC is a regular LiteX SoC, LiteInjector can target both **hardware countermeasures** (a protection signal inside a CPU) and **software countermeasures** (the instructions fetched by the CPU), on the same platform.
+
+## Next steps
+
+- [Install LiteX and LiteInjector](../installation/)
+- [Run your first injection](../first-injection/) on a simple counter
+- [Understand the architecture](../../concepts/architecture/)

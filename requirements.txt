@@ -1,6 +1,5 @@
 # Build tools needed by LiteX to compile the SoC software (BIOS, firmware).
-# Migen and LiteX themselves are installed with litex_setup.py, see the docs.
-# Documentation dependencies are in docs/requirements.txt.
+# Migen and LiteX themselves are installed with litex_setup.py, see the Installation page of the website.
 ninja
 meson==0.59
 setuptools

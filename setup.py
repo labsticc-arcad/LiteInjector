@@ -19,7 +19,7 @@ setup(
     license="BSD-2-Clause",
     python_requires=">=3.7",
     # Migen and LiteX are expected to be installed beforehand with litex_setup.py
-    # (see docs/source/install/litex.rst), pip only checks that they are present.
+    # (see the Installation page of the website), pip only checks that they are present.
     install_requires=[
         "migen",
         "litex",
