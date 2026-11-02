@@ -5,8 +5,25 @@ template: splash
 hero:
   tagline: Emulate fault injection attacks on your LiteX SoC, directly on FPGA. Bit-accurate, cycle-accurate, and up to 210× faster than RTL simulation.
   image:
-    file: ../../assets/figures/liteinjector_overview.svg
-    alt: A LiteX SoC with LiteInjector on the instruction bus, controlled from the host.
+    html: |
+      <figure class="li-demo" aria-label="Animated example: liteinjector_cli replaces one instruction on the CPU instruction bus one cycle after address 0x37A, and the BIOS answers Access granted to a wrong password.">
+        <div class="li-demo-bar" aria-hidden="true"><span></span><span></span><span></span><b>BIOS password bypass</b></div>
+        <div class="li-demo-body" aria-hidden="true">
+          <pre class="li-cmd"><span class="li-prompt">$</span> liteinjector_cli run --when ibus_adr=0x37A \
+            --offset 1 --fault bit-value:ibus_dat_r=0x00050C63
+      <span class="li-armed">Injector armed.</span></pre>
+          <div class="li-wave">
+            <div class="li-labels"><span>clk</span><span>ibus_adr</span><span>hit</span><span>ibus_dat_r</span></div>
+            <div class="li-track">
+              <span class="li-clkrow"><svg class="li-clk" viewBox="0 0 100 10" preserveAspectRatio="none"><polyline points="0,9 0,1 12.5,1 12.5,9 25,9 25,1 37.5,1 37.5,9 50,9 50,1 62.5,1 62.5,9 75,9 75,1 87.5,1 87.5,9 100,9"/></svg><b class="li-dot"></b></span>
+              <span class="li-row"><i>379</i><i class="li-match">37A</i><i>37B</i><i>37C</i></span>
+              <span class="li-row li-hitrow"><i></i><i></i><i class="li-hit"></i><i></i></span>
+              <span class="li-row"><i>…</i><i>…</i><i class="li-fault"><s>instr</s><em>00050C63</em></i><i>…</i></span>            </div>
+          </div>
+          <pre class="li-console"><span class="li-prompt">litex&gt;</span> unlock wrong-password
+      <span class="li-granted">Access granted</span></pre>
+        </div>
+      </figure>
   actions:
     - text: Get started
       link: start/introduction/

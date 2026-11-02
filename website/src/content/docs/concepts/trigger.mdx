@@ -3,15 +3,13 @@ title: Trigger system
 description: How LiteInjector detects events, delays the fault and chains several triggers.
 ---
 
-import { Aside } from '@astrojs/starlight/components';
-
 The trigger system decides **when** a fault is applied. Its condition logic comes from LiteScope, extended to detect values and edges at the same time, to delay the fault, and to chain several triggers.
 
 ## Conditions with masks
 
 A condition compares the data word with an expected value through a mask: the mask selects the bits to check, so a condition can target a whole signal, a few bits, or several signals at once. In the host tools, a value such as `0x3x` or `0b1x0` sets the mask automatically: `x` digits are not checked.
 
-![Event detection: the mask is applied to the data and to the expected value, then both are compared.](../../../assets/figures/comparator_arch.svg)
+![Event detection: the mask is applied to the data and to the expected value, then both are compared.](../../../assets/diagrams/condition-mask.svg)
 
 The same masking is used for edges. Each bit of the data word has a rising edge and a falling edge detector (the bit is compared with its value on the previous cycle), and the trigger selects the bits on which an edge is required.
 
@@ -37,13 +35,11 @@ The offset is counted from the first cycle where the condition is met; other mat
 
 ## Trigger queue and multi-fault
 
-![Architecture of the trigger system.](../../../assets/figures/trigger_arch.svg)
+![Architecture of the trigger system.](../../../assets/diagrams/trigger-system.svg)
 
-The triggers are stored in a FIFO written by the host through CSRs. Each entry holds the conditions, the offset, the duration and the fault to apply. The trigger system uses the first entry, and consumes it once its fault has been applied; the next entry then becomes active. A sequence of entries therefore describes a **multi-fault attack**: fault the first event, then wait for the second one, and so on. The number of entries is set by the `depth` parameter of the core.
+The triggers are stored in a FIFO written by the host through CSRs. Each entry holds the conditions, the offset, the duration, the flags and the fault vectors (`fault_and`, `fault_or`, `fault_xor`, see [Fault injector](../injector/)). The trigger system uses the first entry, and consumes it once its fault has been applied; the next entry then becomes active. A sequence of entries therefore describes a **multi-fault attack**: fault the first event, then wait for the second one, and so on. The number of entries is set by the `depth` parameter of the core.
 
-<Aside>
-The diagrams show the general structure of the trigger system. In the current version, the fault description stored in each entry is the generic `fault_and` / `fault_or` / `fault_xor` vectors described in [Fault injector](../injector/), plus the duration and flags.
-</Aside>
+The **sequencer** waits in `IDLE` for the condition, counts the offset in `DELAY`, then raises `hit` for the duration of the fault in `INJECT`. When the random flag is set, the `fault_xor` vector is combined with a new word of the **LFSR** for every fault.
 
 ## Control and status
 

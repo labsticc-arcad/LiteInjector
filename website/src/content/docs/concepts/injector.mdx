@@ -9,15 +9,11 @@ The injector modifies the data word on the cycles selected by the trigger system
 
 To reset some bits of a value, an AND gate is enough: the mask has a `0` on the bits to reset and a `1` on the bits to keep.
 
-![A counter value: 99.](../../../assets/figures/simple_counter_value.svg)
+![The counter value goes through an AND gate with the mask.](../../../assets/diagrams/injector-and-example.svg)
 
-![The mask used to inject the fault.](../../../assets/figures/example_mask.svg)
+![Bit reset: 99 AND a mask with bit 6 at 0 gives 35.](../../../assets/diagrams/bit-reset-example.svg)
 
-![The faulted value: 35.](../../../assets/figures/faulty_result.svg)
-
-![The principle of the injector.](../../../assets/figures/simple_injector.svg)
-
-The counter value goes from 99 to 35. Every fault model is built the same way, with the right gate and mask.
+The counter value goes from 99 to 35: only bit 6, set to `0` in the mask, is reset. Every fault model is built the same way, with the right gate and mask.
 
 ## One equation for every fault model
 
@@ -44,6 +40,6 @@ Because the hardware only knows these three vectors:
 
 For `bit-flip-random`, a hardware random generator (xorshift, reseeded on clear) provides a new random word for every fault, so a campaign of N runs tests N different random faults.
 
-![Architecture of the injector.](../../../assets/figures/liteinjector_injector_arch.svg)
+![Architecture of the injector.](../../../assets/diagrams/injector.svg)
 
 The injector works on the concatenated data word, so a single trigger can fault several signals at once. The faulted word is then sliced back into the original signals.

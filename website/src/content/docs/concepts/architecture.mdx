@@ -16,7 +16,7 @@ LiteInjector was designed with a few requirements in mind:
 
 The LiteInjector core is a pipeline of three blocks.
 
-![Architecture of the LiteInjector core: mux, trigger system and injector.](../../../assets/figures/liteinjector_arch.svg)
+![Architecture of the LiteInjector core: mux, trigger system and injector.](../../../assets/diagrams/core-architecture.svg)
 
 1. **Mux.** The probed signals are concatenated into a single data word whose width is the sum of their widths. Signals can be organized in several **groups**, the mux selects which group is used, and the data word is as wide as the largest group.
 2. **Trigger system.** It holds a queue of triggers written by the host. It compares the data word with the current trigger and decides on which clock cycles the fault is applied, and which fault. See [Trigger system](../trigger/).
@@ -28,6 +28,6 @@ The host machine runs the LiteInjector client, which talks to the SoC through `l
 
 In the example below, LiteInjector is placed on the instruction bus between the Wishbone bus and a VexRiscv CPU: by modifying the instructions the CPU fetches, it changes the control flow of the software, like a fault injection attack that skips or alters an instruction.
 
-![A LiteX SoC with LiteInjector on the instruction bus of the VexRiscv CPU.](../../../assets/figures/liteinjector_overview.svg)
+![A LiteX SoC with LiteInjector on the instruction bus of the VexRiscv CPU.](../../../assets/diagrams/soc-ibus.svg)
 
 The same core can be placed on any other signal: a peripheral bus, a register, a status flag, or a signal inside an instrumented Verilog IP such as a CPU. The [tutorials](../../tutorials/bios-password/) show several of these placements.

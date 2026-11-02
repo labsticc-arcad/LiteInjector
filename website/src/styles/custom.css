@@ -10,3 +10,216 @@
 	display: block;
 	margin-inline: auto;
 }
+
+/* Landing page: animated fault injection demo ------------------------------------------------- */
+
+.hero:has(.li-demo) > .hero-html {
+	width: 100%;
+	order: 2; /* Below the title on small screens. */
+}
+
+@media (max-width: 50rem) {
+	.li-demo { font-size: 0.68rem !important; }
+	.li-wave { grid-template-columns: 4.6rem 1fr !important; padding: 0.6rem !important; }
+	.li-demo-body { padding: 0.9rem 0.8rem 1rem !important; }
+	.li-row i { font-size: 0.92em; }
+	.li-fault em { font-size: 0.76em; letter-spacing: -0.04em; }
+}
+
+@media (min-width: 50rem) {
+	.hero:has(.li-demo) {
+		grid-template-columns: 5fr 6fr;
+	}
+	.hero:has(.li-demo) > .hero-html {
+		width: min(100%, 34rem);
+	}
+}
+
+.li-demo {
+	--li-bg: #0f172a;
+	--li-fg: #e2e8f0;
+	--li-dim: #64748b;
+	--li-accent: #818cf8;
+	--li-fault: #fb7185;
+	--li-ok: #4ade80;
+	--li-t: 10s;
+	width: 100%;
+	margin: 0;
+	border-radius: 0.75rem;
+	background: var(--li-bg);
+	color: var(--li-fg);
+	box-shadow: 0 20px 45px -20px rgb(15 23 42 / 0.6), 0 0 0 1px rgb(148 163 184 / 0.2);
+	overflow: hidden;
+	font-family: var(--__sl-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+	font-size: 0.8rem;
+	line-height: 1.6;
+	text-align: start;
+}
+
+.li-demo-bar {
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+	padding: 0.55rem 0.9rem;
+	background: #1e293b;
+	color: var(--li-dim);
+}
+.li-demo-bar span {
+	width: 0.6rem;
+	height: 0.6rem;
+	border-radius: 50%;
+	background: #334155;
+}
+.li-demo-bar b {
+	margin-inline-start: 0.5rem;
+	font-weight: 500;
+}
+
+.li-demo-body {
+	display: grid;
+	gap: 0.9rem;
+	padding: 1rem 1.1rem 1.2rem;
+}
+
+.li-demo pre {
+	margin: 0;
+	padding: 0;
+	background: none;
+	border: 0;
+	color: inherit;
+	font: inherit;
+	white-space: pre-wrap;
+	overflow: visible;
+}
+
+.li-prompt { color: var(--li-accent); }
+.li-armed { color: var(--li-dim); }
+
+/* Waveform: labels on the left, signals on the right, scanned like a logic analyzer capture. */
+.li-wave {
+	display: grid;
+	grid-template-columns: 5.5rem 1fr;
+	gap: 0 0.6rem;
+	padding: 0.7rem 0.8rem;
+	border-radius: 0.5rem;
+	background: rgb(148 163 184 / 0.08);
+}
+.li-labels,
+.li-track {
+	display: grid;
+	grid-auto-rows: 1.4rem;
+	gap: 0.35rem;
+	align-items: center;
+}
+.li-labels { color: var(--li-dim); }
+.li-track { position: relative; }
+.li-row {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 3px;
+	height: 100%;
+}
+.li-row i {
+	display: grid;
+	place-items: center;
+	font-style: normal;
+	border: 1px solid rgb(148 163 184 / 0.35);
+	border-radius: 4px;
+	color: var(--li-fg);
+	overflow: hidden;
+}
+.li-hitrow i {
+	border: 0;
+	border-radius: 2px;
+	border-bottom: 2px solid var(--li-dim);
+}
+.li-clk {
+	width: 100%;
+	height: 100%;
+	overflow: visible;
+}
+.li-clk polyline {
+	fill: none;
+	stroke: #94a3b8;
+	stroke-width: 1.5;
+	stroke-linejoin: round;
+	vector-effect: non-scaling-stroke;
+}
+.li-fault s,
+.li-fault em {
+	grid-area: 1 / 1;
+	text-decoration: none;
+	font-style: normal;
+}
+.li-fault em {
+	color: var(--li-fault);
+	font-weight: 700;
+}
+
+/* A dot runs along the clock, the events light up when it reaches their cycle. */
+.li-clkrow {
+	position: relative;
+	height: 100%;
+}
+.li-dot {
+	position: absolute;
+	left: 0;
+	top: 10%;
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: var(--li-accent);
+	box-shadow: 0 0 0 3px rgb(129 140 248 / 0.25), 0 0 10px 2px rgb(129 140 248 / 0.7);
+	transform: translate(-50%, -50%);
+	opacity: 0;
+}
+
+.li-granted {
+	color: var(--li-ok);
+	font-weight: 700;
+}
+
+/* Timeline (10 s): command, armed, the dot runs along the 4 clock cycles (22% -> 58%, 9% per
+   cycle), address 0x37A at cycle 2, hit and faulted data at cycle 3 (offset 1), then the console. */
+@media (prefers-reduced-motion: no-preference) {
+	.li-cmd       { animation: li-cmd var(--li-t) infinite; }
+	.li-armed     { animation: li-armed var(--li-t) infinite; }
+	.li-dot       { animation: li-dot var(--li-t) linear infinite; }
+	.li-match     { animation: li-match var(--li-t) infinite; }
+	.li-hit       { animation: li-hit var(--li-t) infinite; }
+	.li-fault     { animation: li-fault-cell var(--li-t) infinite; }
+	.li-fault s   { animation: li-before var(--li-t) infinite; }
+	.li-fault em  { animation: li-after var(--li-t) infinite; }
+	.li-console   { animation: li-console var(--li-t) infinite; }
+	.li-granted   { animation: li-granted var(--li-t) infinite; }
+}
+
+/* Final state, also used without animation. */
+.li-match { background: rgb(129 140 248 / 0.25); color: #c7d2fe; }
+.li-hit { border-bottom: 0 !important; background: linear-gradient(var(--li-fault), var(--li-fault)) bottom / 100% 65% no-repeat; }
+.li-row i.li-fault { background: rgb(251 113 133 / 0.18); border-color: var(--li-fault); }
+.li-fault s { opacity: 0; }
+
+@keyframes li-cmd     { 0% { opacity: 0; transform: translateY(4px); } 6%, 100% { opacity: 1; transform: none; } }
+@keyframes li-armed   { 0%, 14% { opacity: 0; } 18%, 100% { opacity: 1; } }
+/* High during the first half of each cycle, low during the second half (edges are instant). */
+@keyframes li-dot {
+	0%, 20%  { left: 0%; top: 90%; opacity: 0; }
+	22%      { left: 0%; top: 10%; opacity: 1; }
+	26.49%   { top: 10%; } 26.5%  { top: 90%; }
+	30.99%   { top: 90%; } 31%    { top: 10%; }
+	35.49%   { top: 10%; } 35.5%  { top: 90%; }
+	39.99%   { top: 90%; } 40%    { top: 10%; }
+	44.49%   { top: 10%; } 44.5%  { top: 90%; }
+	48.99%   { top: 90%; } 49%    { top: 10%; }
+	53.49%   { top: 10%; } 53.5%  { top: 90%; }
+	58%      { left: 100%; top: 90%; opacity: 1; }
+	61%, 100% { left: 100%; top: 90%; opacity: 0; }
+}
+@keyframes li-match   { 0%, 31% { background: transparent; color: var(--li-fg); } 32%, 94% { background: rgb(129 140 248 / 0.25); color: #c7d2fe; } 100% { background: transparent; } }
+@keyframes li-hit     { 0%, 40% { background-size: 100% 0%; } 41%, 94% { background-size: 100% 65%; } 100% { background-size: 100% 0%; } }
+@keyframes li-fault-cell { 0%, 40% { background: transparent; border-color: rgb(148 163 184 / 0.35); } 41.5%, 94% { background: rgb(251 113 133 / 0.18); border-color: var(--li-fault); } 100% { background: transparent; } }
+@keyframes li-before  { 0%, 40% { opacity: 1; } 41.5%, 94% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes li-after   { 0%, 40% { opacity: 0; transform: scale(0.9); } 42%, 94% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+@keyframes li-console { 0%, 61% { opacity: 0; } 64%, 96% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes li-granted { 0%, 68% { opacity: 0; } 72%, 96% { opacity: 1; } 100% { opacity: 0; } }

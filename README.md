@@ -1,86 +1,76 @@
 <div align="center">
 
-```
-                             __    _ __       ____        _           __              
-                            / /   (_) /____  /  _/___    (_)__  _____/ /_____  _____  
-                           / /   / / __/ _ \ / // __ \  / / _ \/ ___/ __/ __ \/ ___/  
-                          / /___/ / /_/  __// // / / / / /  __/ /__/ /_/ /_/ / /      
-                         /_____/_/\__/\___/___/_/ /_/_/ /\___/\___/\__/\____/_/       
-                                                   /___/                               
-                                                                                       
-                      A LiteX based tool for emulating logical faults on Systems on Chips
-                                                                                     
-```
+# LiteInjector
 
-[![Ubuntu](https://img.shields.io/badge/platform-Ubuntu%2020.04-0078d7.svg?style=for-the-badge&logo=appveyor)](https://www.ubuntu-fr.org) 
-[![Python](https://img.shields.io/badge/language-Python3-%23f34b7d.svg?style=for-the-badge&logo=appveyor)](https://www.python.org) 
-[![LiteX](https://img.shields.io/badge/Library-LiteX-red.svg?style=for-the-badge&logo=appveyor)](https://github.com/enjoy-digital/litex) 
-[![Migen](https://img.shields.io/badge/Library-Migen-green.svg?style=for-the-badge&logo=appveyor)](https://m-labs.hk/gateware/migen/)
+**Fault injection emulation for LiteX Systems on Chip, directly on FPGA.**
+
+[![License](https://img.shields.io/badge/license-BSD--2--Clause-blue)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.7%2B-blue)](https://www.python.org)
+[![LiteX](https://img.shields.io/badge/built%20with-LiteX-red)](https://github.com/enjoy-digital/litex)
 
 </div>
 
-# :book: Project Overview
+LiteInjector adds bit-accurate, cycle-accurate fault injection to SoCs built with [LiteX](https://github.com/enjoy-digital/litex). The faults are emulated on the FPGA, on the real SoC running its real software, up to **210× faster** than RTL simulation, and every attack parameter can be changed at runtime from the host.
 
-LiteInjector is an open source logic fault injection tool designed for security evaluation campaigns on systems on chip (SoC) generated with the LiteX framework. Developed in Python using Migen, LiteInjector enables precise, bit-by-bit and cycle-by-cycle fault injection directly on FPGA.
+## Features
 
-### ✨ Features
+- Probe and fault any Migen signal, or an instrumented signal of a Verilog IP
+- Triggers on values with "don't care" bits, rising and falling edges, with a delay and a duration in cycles
+- Five fault models (bit set, reset, flip, random flip, value), combinable in a single trigger
+- Chained triggers for multi-fault attacks, without rebuilding the bitstream
+- Command line, Python API and campaign runner with target observation and CSV reports
 
-- Seamless integration with LiteX / Migen-based SoCs
-- Logic fault injection with 5 supported fault models (bit set, reset, flip, random flip, write)
-- Event-based trigger system with dynamic masking (value match, rising/falling edge, configurable delay)
-- CLI, Python API and campaign runner (sweeps, target observation, CSV reports)
-- Up to **210× faster** than traditional RTL simulation
-
-### 🔧 Usage
-
-LiteInjector integrates as a hardware module into the SoC and is configured via the software controller (`liteinjector_cli`) through UART, JTAG, USB, or other supported interfaces.
-
-### 🧪 Use Cases
-
-- Bypassing PIN code verification (VerifyPin benchmark)
-- Circumventing Physical Memory Protection (PMP) in VexRiscV cores
-- Multi-fault injection campaigns against protected code sequences
-
-# :rocket: Getting Started
-
-### Documentation and tutorials
-
-The documentation, tutorials and references are in the [`website`](website) folder (Astro Starlight). To browse them locally (requires Node.js):
+## Quick start
 
 ```console
+$ ./litex_setup.py --init --install --config=standard --tag=2022.08
 $ git clone https://github.com/labsticc-arcad/LiteInjector.git
-$ cd LiteInjector/website
-$ npm install
-$ npm run dev
+$ pip install -r LiteInjector/requirements.txt -e LiteInjector
 ```
 
-The installation of LiteX and LiteInjector is described in the *Installation* page.
+Add the core to a LiteX SoC:
 
-### Quick look
+```python
+from liteinjector import LiteInjector
+
+self.submodules.injector = LiteInjector([ibus.adr, ibus.dat_r], depth=16, csr_csv="injector.csv")
+self.add_uartbone("liteinjector")
+```
+
+Then drive it from the host, through `litex_server`:
 
 ```console
-$ liteinjector_cli info
 $ liteinjector_cli run --when ibus_adr=0x0000037A --offset 1 --fault bit-value:ibus_dat_r=0x00050C63 --wait 5
 $ liteinjector_cli campaign examples/poc_basys3_vexriscv/campaign.toml
 ```
 
-### Run the tests
+## Documentation
 
-The gateware and the host software are tested in simulation with Migen, no FPGA is needed (requires LiteX and `pytest`):
+The documentation, the tutorials and the references are in the [`website`](website) folder:
 
 ```console
-$ python3 -m pytest test
+$ cd website && npm install && npm run dev
 ```
 
-# :page_facing_up: Cite Us
+Tests run in simulation, no FPGA needed: `python3 -m pytest test`.
 
-If you use this software in your work, please cite it using the following metadata.
+## Citation
 
 ```bibtex
 @INPROCEEDINGS{Henault2025LiteInjector,
   author={Henault, Adam and Tanguy, Philippe and Lapôtre, Vianney},
-  booktitle={2025 28th Euromicro Conference on Digital System Design (DSD)}, 
-  title={LiteInjector: A LiteX Extension for Fault Injection}, 
+  booktitle={2025 28th Euromicro Conference on Digital System Design (DSD)},
+  title={LiteInjector: A LiteX Extension for Fault Injection},
   year={2025}
 }
 ```
+
+## Acknowledgements
+
+LiteInjector is developed by the ARCAD team of the [Lab-STICC](https://labsticc.fr) laboratory (Lorient, France). It builds on [LiteX](https://github.com/enjoy-digital/litex) and [LiteScope](https://github.com/enjoy-digital/litescope) by Enjoy-Digital.
+
+Parts of this project, including the refactoring of the gateware and host software, the tests, the documentation website and its diagrams, were developed with the assistance of AI tools ([Claude Code](https://www.anthropic.com/claude-code) by Anthropic). This work was directed and reviewed by the authors, who remain responsible for its content.
+
+## License
+
+BSD-2-Clause, see [LICENSE](LICENSE).

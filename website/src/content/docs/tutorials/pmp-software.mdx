@@ -9,7 +9,7 @@ RISC-V **Physical Memory Protection (PMP)** lets the software forbid accesses to
 
 LiteInjector sits on the instruction bus and replaces the call to the PMP configuration function by a `NOP`. The protection is never set up, and the protected area can be written.
 
-![The SoC used in this tutorial: VexRiscv Secure with LiteInjector on the instruction bus.](../../../assets/figures/soc_pmp_sw.svg)
+![The SoC used in this tutorial: VexRiscv Secure with LiteInjector on the instruction bus.](../../../assets/diagrams/soc-pmp-software.svg)
 
 **You need:** a Digilent Basys3 board, a USB-UART adapter for the UART bridge, and the [installation](../../start/installation/) done. The files are in [`examples/poc_basys3_pmp_software`](https://github.com/labsticc-arcad/LiteInjector/tree/main/examples/poc_basys3_pmp_software).
 
