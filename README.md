@@ -56,6 +56,14 @@ $ cd build/html
 
 The installation of LiteX and LiteInjector is described in the documentation (*Installation* section).
 
+### Run the tests
+
+The gateware is tested in simulation with Migen, no FPGA is needed (requires LiteX and `pytest`):
+
+```console
+$ python3 -m pytest test
+```
+
 # :page_facing_up: Cite Us
 
 If you use this software in your work, please cite it using the following metadata.

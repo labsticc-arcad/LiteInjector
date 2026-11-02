@@ -179,9 +179,9 @@ class BaseSoC(SoCCore):
         analyzer_signals = [
         self.cpu.pbus,
         self.injector.injector.sink.data,
-        self.injector.injector.sink.fault_model,
-        self.injector.injector.sink.fault_value,
-        self.injector.injector.sink.fault_mask,
+        self.injector.injector.sink.fault_and,
+        self.injector.injector.sink.fault_or,
+        self.injector.injector.sink.fault_xor,
         self.injector.injector.output,
         self.injector.trigger.source.hit,
         self.injector.trigger.trigger_hit,

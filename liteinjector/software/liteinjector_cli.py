@@ -235,6 +235,7 @@ def run_batch(args):
     # Configure and run LiteInjector injector.
     injector = LiteInjectorDriver(bus.regs, basename, config_csv=args.csv, debug=True)
     injector.configure_group(args.group)
+    injector.clear() # Drop triggers left by a previous run.
     if not add_triggers(args, injector, signals):
         raise Exception("You have not added any triggers !")
     injector.run()
