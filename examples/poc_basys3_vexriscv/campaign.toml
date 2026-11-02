@@ -1,0 +1,28 @@
+# Bit flip campaign on the BIOS "unlock" password check (see docs/source/poc/vexriscv_sw.rst).
+#
+# Every bit of the instruction fetched at 0x37A is flipped in turn, and the BIOS answer to a
+# wrong password tells whether the check was bypassed.
+#
+#   $ litex_server --uart --uart-port /dev/ttyXXX          # UARTBone port
+#   $ liteinjector_cli campaign campaign.toml --dry-run     # check the runs
+#   $ liteinjector_cli campaign campaign.toml
+
+[campaign]
+name   = "bios-unlock-bitflip"
+repeat = 1
+output = "bios_unlock_results.csv"
+
+[sweep]
+bit = "0..31"
+
+[[step]]
+when   = { ibus_adr = "0x0000037A" }
+offset = 1
+fault  = { model = "bit-flip", signal = "ibus_dat_r", bits = "{bit}" }
+
+[target]
+uart    = "/dev/ttyUSB1"     # BIOS console of the SoC, change to your port.
+send    = "unlock aaaa\n"
+success = "Access granted"
+failure = "Access refused"
+timeout = 2.0

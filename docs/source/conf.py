@@ -3,6 +3,13 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
+import os
+import sys
+
+# Make the package importable for autodoc, without requiring Migen/LiteX on the docs builder.
+sys.path.insert(0, os.path.abspath("../.."))
+autodoc_mock_imports = ["migen", "litex"]
+
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 

@@ -23,6 +23,8 @@ setup(
     install_requires=[
         "migen",
         "litex",
+        "pyserial",                                  # Campaign observation over UART.
+        "tomli>=1.1; python_version < '3.11'",       # TOML campaign files.
     ],
     packages=find_packages(exclude=("test*", "sim*", "doc*", "examples*")),
     include_package_data=True,
