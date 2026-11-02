@@ -12,7 +12,7 @@
                                                                                      
 ```
 
-[![Ubtuntu](https://img.shields.io/badge/platform-Ubuntu%2020.04-0078d7.svg?style=for-the-badge&logo=appveyor)](https://www.ubuntu-fr.org) 
+[![Ubuntu](https://img.shields.io/badge/platform-Ubuntu%2020.04-0078d7.svg?style=for-the-badge&logo=appveyor)](https://www.ubuntu-fr.org) 
 [![Python](https://img.shields.io/badge/language-Python3-%23f34b7d.svg?style=for-the-badge&logo=appveyor)](https://www.python.org) 
 [![LiteX](https://img.shields.io/badge/Library-LiteX-red.svg?style=for-the-badge&logo=appveyor)](https://github.com/enjoy-digital/litex) 
 [![Migen](https://img.shields.io/badge/Library-Migen-green.svg?style=for-the-badge&logo=appveyor)](https://m-labs.hk/gateware/migen/)
@@ -48,11 +48,13 @@ LiteInjector integrates as a hardware module into the SoC and is configured via 
 ```console
 $ git clone https://github.com/labsticc-arcad/LiteInjector.git
 $ cd LiteInjector
-$ pip3 install -r requirements.txt
+$ pip3 install -r docs/requirements.txt
 $ cd docs
 $ make html
-$ cd _build/html
+$ cd build/html
 ```
+
+The installation of LiteX and LiteInjector is described in the documentation (*Installation* section).
 
 # :page_facing_up: Cite Us
 

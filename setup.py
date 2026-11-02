@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+from pathlib import Path
+
 from setuptools import setup
 from setuptools import find_packages
 
@@ -8,11 +10,20 @@ setup(
     name="liteinjector",
     version="2.0",
     description="Small footprint and configurable embedded FPGA fault injection emulator",
+    long_description=Path(__file__).with_name("README.md").read_text(encoding="utf-8"),
+    long_description_content_type="text/markdown",
     author="Adam Henault",
     author_email="adam.henault@univ-ubs.fr",
-    url="http://adamhlt.com",
+    url="https://github.com/labsticc-arcad/LiteInjector",
     download_url="https://github.com/labsticc-arcad/LiteInjector",
-    python_requires="~=3.6",
+    license="BSD-2-Clause",
+    python_requires=">=3.7",
+    # Migen and LiteX are expected to be installed beforehand with litex_setup.py
+    # (see docs/source/install/litex.rst), pip only checks that they are present.
+    install_requires=[
+        "migen",
+        "litex",
+    ],
     packages=find_packages(exclude=("test*", "sim*", "doc*", "examples*")),
     include_package_data=True,
     entry_points={

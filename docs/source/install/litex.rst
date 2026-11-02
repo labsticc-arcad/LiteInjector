@@ -32,7 +32,7 @@ Installing LiteX is relatively simple. Using the commands below you can install 
     $ chmod +x litex_setup.py
     $ ./litex_setup.py --init --install --config=standard --tag=2022.08
 
-The commands below allow you to install the LiteInjector emulator. To run the emulator and LiteX, you need to install the dependencies in the :code:`requirements.txt` file. Once the dependencies have been installed, you can install the LiteInjector package. Finally, we install the RiscV toolchain, which allows us to compile the software part of the SoC.
+The commands below allow you to install the LiteInjector emulator. To run the emulator and LiteX, you need to install the build tools listed in the :code:`requirements.txt` file (the documentation dependencies are in :code:`docs/requirements.txt`). Once the dependencies have been installed, you can install the LiteInjector package. Finally, we install the RiscV toolchain, which allows us to compile the software part of the SoC.
 
 .. code-block:: console
 

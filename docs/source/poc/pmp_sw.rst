@@ -24,7 +24,7 @@ Use the following commands to build the SoC PoC. The software must be generated 
     $ ./digilent_basys3.py --cpu-variant=secure --csr-csv=csr.csv --integrated-main-ram-size=0x2000 --build --load
     $ cd software
     $ make Vex
-    $ litex_term /dev/ttyXXX --kernel=PMPTestWrite_VexRiscv.bin
+    $ litex_term /dev/ttyXXX --kernel=poc.bin
 
 Once you have run :code:`litex_term`, you must either use the LiteX bios and use the :code:`serialboot` command or :code:`reset` the FPGA board.
 

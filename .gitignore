@@ -1,17 +1,23 @@
-doc/build
 *.vscode
 *.DS_Store
+
+# graphify knowledge graph output
+graphify-out/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
 
-# C extensions
+# C extensions and firmware build outputs
 *.so
 *.d
 *.o
+*.elf
+!examples/poc_arty_linux/software/poc.elf
 *.elf.map
+# PMP firmwares are rebuilt with `make Vex` (prebuilt app.bin and Linux images stay tracked)
+examples/poc_basys3_pmp_*/software/*.bin
 
 # Distribution / packaging
 .Python
@@ -35,6 +41,7 @@ prog/
 *.dts
 *.csv
 *.json
+!examples/poc_arty_linux/images/boot.json
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -74,6 +81,7 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+docs/build/
 
 # PyBuilder
 target/

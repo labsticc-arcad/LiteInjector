@@ -1,8 +1,6 @@
-sphinx==6.0
-sphinx-rtd-theme 
-ninja 
+# Build tools needed by LiteX to compile the SoC software (BIOS, firmware).
+# Migen and LiteX themselves are installed with litex_setup.py, see the docs.
+# Documentation dependencies are in docs/requirements.txt.
+ninja
 meson==0.59
-sphinx-copybutton
-sphinx-favicon
-sphinxcontrib-images
 setuptools
