@@ -7,10 +7,13 @@
 [![License](https://img.shields.io/badge/license-BSD--2--Clause-blue)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.7%2B-blue)](https://www.python.org)
 [![LiteX](https://img.shields.io/badge/built%20with-LiteX-red)](https://github.com/enjoy-digital/litex)
+[![Documentation](https://img.shields.io/badge/docs-online-brightgreen)](https://labsticc-arcad.github.io/LiteInjector/)
 
 </div>
 
 LiteInjector adds bit-accurate, cycle-accurate fault injection to SoCs built with [LiteX](https://github.com/enjoy-digital/litex). The faults are emulated on the FPGA, on the real SoC running its real software, up to **210× faster** than RTL simulation, and every attack parameter can be changed at runtime from the host.
+
+📖 **Full documentation, tutorials and references: https://labsticc-arcad.github.io/LiteInjector/**
 
 ## Features
 
@@ -44,9 +47,13 @@ $ liteinjector_cli run --when ibus_adr=0x0000037A --offset 1 --fault bit-value:i
 $ liteinjector_cli campaign examples/poc_basys3_vexriscv/campaign.toml
 ```
 
+For a complete walkthrough, see the [online documentation](https://labsticc-arcad.github.io/LiteInjector/).
+
 ## Documentation
 
-The documentation, the tutorials and the references are in the [`website`](website) folder:
+The documentation is available online at **[labsticc-arcad.github.io/LiteInjector](https://labsticc-arcad.github.io/LiteInjector/)**. It contains the tutorials, the guides and the references (command line, Python API, campaign files).
+
+The sources of the documentation are in the [`website`](website) folder. To build and browse it locally:
 
 ```console
 $ cd website && npm install && npm run dev
