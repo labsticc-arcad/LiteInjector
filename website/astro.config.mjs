@@ -10,6 +10,7 @@ export default defineConfig({
 	integrations: [
 		starlight({
 			title: 'LiteInjector',
+			routeMiddleware: './src/routeData.ts',
 			description: 'Open source fault injection emulator for LiteX Systems on Chip.',
 			favicon: '/favicon-32x32.png',
 			customCss: ['./src/styles/custom.css'],

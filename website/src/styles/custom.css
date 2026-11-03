@@ -9,6 +9,11 @@
 .sl-markdown-content img {
 	display: block;
 	margin-inline: auto;
+	max-width: 100%;
+	max-height: 32rem; /* Keeps tall console screenshots from filling the page. */
+	width: auto;
+	height: auto;
+	object-fit: contain;
 }
 
 /* Landing page: animated fault injection demo ------------------------------------------------- */
