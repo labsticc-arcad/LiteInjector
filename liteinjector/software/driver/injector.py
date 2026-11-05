@@ -39,8 +39,10 @@ class LiteInjectorDriver:
                 self.csrs[key[len(prefix):]] = reg
         if "trigger_mem_write" not in self.csrs:
             raise RuntimeError(f"No '{name}' LiteInjector registers found in the CSR map.")
-
-        self.stop()
+        # NB: do NOT stop()/disarm here. Connecting must be non-destructive, otherwise a
+        # plain `status` (which opens a fresh connection) disarms a pending injector and can
+        # never report armed=True. Disarming is explicit: configure() stops before (re)loading
+        # triggers, and disarm()/clear() stop on request.
 
     def _reg(self, name):
         return self.csrs[name]
