@@ -37,7 +37,7 @@ The offset is counted from the first cycle where the condition is met; other mat
 
 ![Architecture of the trigger system.](../../../assets/diagrams/trigger-system.svg)
 
-The triggers are stored in a FIFO written by the host through CSRs. Each entry holds the conditions, the offset, the duration, the flags and the fault vectors (`fault_and`, `fault_or`, `fault_xor`, see [Fault injector](../injector/)). The trigger system uses the first entry, and consumes it once its fault has been applied; the next entry then becomes active. A sequence of entries therefore describes a **multi-fault attack**: fault the first event, then wait for the second one, and so on. The number of entries is set by the `depth` parameter of the core.
+The triggers are stored in a FIFO written by the host through CSRs. Each entry holds the conditions, the offset, the duration, the flags and the fault vectors (`fault_and`, `fault_or`, `fault_xor`, see [Fault injector](../injector/)). The trigger system uses the first entry, and consumes it once its fault has been applied; the next entry then becomes active. A sequence of entries therefore describes a **multi-fault attack**: fault the first event, then wait for the second one, and so on. The number of entries is set by the `depth` parameter of the core: it is the maximum number of chained triggers, and loading more is refused by the host software ("Trigger memory full"). On the command line, chain triggers with `--then` (see [Command line](../../reference/cli/#several-faults-in-a-row)).
 
 The **sequencer** waits in `IDLE` for the condition, counts the offset in `DELAY`, then raises `hit` for the duration of the fault in `INJECT`. When the random flag is set, the `fault_xor` vector is combined with a new word of the **LFSR** for every fault.
 
@@ -47,4 +47,6 @@ The host can:
 
 - **arm** and **disarm** the trigger system;
 - **clear** it: the pending triggers are flushed, the counters are reset and the random generator is reseeded;
-- read the **status**: `done` when every trigger has fired, `busy` while waiting for an offset or applying a fault, the number of **hits** and of **faults**, the **cycle of the last fault** counted from arming, and the probed data **before and after** the last fault.
+- read the **status**: `done` when every trigger has fired, `busy` while waiting for an offset or applying a fault, the number of **hits** and of **faults**, the **cycle of the last fault** counted from arming, and the probed data **before and after** the last fault;
+- follow a **sequence**: the number of entries loaded since the last clear, compared with the number of faults already applied (for example 2 of 3);
+- read the **history**: for each fault of the sequence, the cycle and the probed data before and after it (one slot per queue entry, `with_history` parameter of the core). Reading it does not modify the core.

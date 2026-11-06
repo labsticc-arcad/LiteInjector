@@ -73,7 +73,9 @@ $ liteinjector_cli run attack.toml --wait 10
 $ liteinjector_cli run unlock.toml glitch.toml --wait 10
 ```
 
-A file cannot be mixed with trigger options on the same command line. The number of triggers is limited by the `depth` of the core.
+A file cannot be mixed with trigger options on the same command line.
+
+The number of chained triggers (the first one plus every `--then`, or the steps of the files) is limited by the `depth` of the core, 16 in the example SoCs. This limit is only detected when the triggers are written to the core (`Trigger memory full`), not by `--dry-run`: check `depth` with `liteinjector_cli info`. To chain more triggers, rebuild the SoC with a larger `depth`.
 
 ### Repeat a sequence
 

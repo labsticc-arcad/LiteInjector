@@ -11,9 +11,9 @@ The host software controls the emulator through `litex_server`. It is organized 
 | Model | `liteinjector.software.model` | Describes an injection: `Trigger` (conditions, offset, duration) and `Fault` (model, signal, bits or value). |
 | Encoder | `liteinjector.software.encoder` | Translates a `Trigger` into the words of a hardware trigger entry. Fault models are functions in a registry. |
 | Driver | `liteinjector.software.driver.injector` | The only module that reads and writes the CSRs of the core. |
-| Client | `liteinjector.software.client` | Python API: connect, inject, wait, read the status. |
+| Client | `liteinjector.software.client` | Python API: connect, inject, wait, read the status and the fault history. |
 | Campaign | `liteinjector.software.campaign` | Sweeps, repetitions, observation of the target, results. |
-| CLI | `liteinjector_cli` | Command line front-end of all the above. |
+| CLI | `liteinjector_cli` | Command line front-end of all the above: one-shot commands, chained faults (`--then`) and an interactive `shell`. |
 
 The encoder is pure computation: any trigger, and any campaign, can be checked and printed with `--dry-run` without hardware.
 

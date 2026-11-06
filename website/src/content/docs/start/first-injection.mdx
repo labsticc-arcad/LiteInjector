@@ -77,7 +77,7 @@ self.add_uartbone("liteinjector")
           --fault bit-value:count_result=0xFFFF --wait 5
     ```
 
-    `--wait` waits for the fault and prints the status: hit and fault counters, the cycle of the fault since arming, and the probed data before and after injection.
+    `--wait` waits for the fault and prints the status: hit and fault counters, the cycle of the fault since arming, and the probed data before and after injection. Add `--history` to get the cycle and data of every fault, and chain several faults with `--then` (see the [command line reference](../../reference/cli/#several-faults-in-a-row)).
 
 </Steps>
 
