@@ -237,6 +237,62 @@ def test_counters_timestamp_and_capture():
     assert values["before"] == 0x5500
     assert values["after"]  == 0x5501
 
+def test_loaded_counter():
+    dut, values = DUT(), []
+    def check():
+        yield
+        values.append((yield dut.inj.trigger.loaded.status))
+    run(dut,
+        *[push(dut, mask=0x00ff, value=0x10, fault_xor=0x0001) for _ in range(3)],
+        check(),
+        clear(dut),
+        check())
+    assert values == [3, 0]
+
+def test_history_records_every_fault():
+    dut, log, events = DUT(depth=4), [], []
+    def read_history():
+        for _ in range(3):
+            yield
+        for index in range(3):
+            yield dut.inj.history_index.storage.eq(index)
+            yield
+            yield
+            events.append((
+                (yield dut.inj.history_timestamp.status),
+                (yield dut.inj.history_before.status),
+                (yield dut.inj.history_after.status)))
+    run(dut,
+        push(dut, mask=0x00ff, value=0x10, fault_xor=0x0001),
+        push(dut, mask=0x00ff, value=0x20, fault_xor=0x0002, offset=2),
+        enable(dut),
+        play(dut, log, [0, 0x10, 0, 0x20, 0, 0, 0, 0], [0x55]*8),
+        read_history())
+    assert faulted(log) == [1, 5]
+    # Cycles increase and the data before/after of each fault is recorded (the 3rd slot is unused).
+    assert events[0][1:] == (0x5510, 0x5511)
+    assert events[1][1:] == (0x5500, 0x5502)
+    assert 0 < events[0][0] < events[1][0]
+
+def test_history_cleared_by_new_sequence():
+    dut, log, values = DUT(depth=4), [], []
+    def check():
+        yield
+        values.append((yield dut.inj.trigger.fault_count.status))
+    run(dut,
+        push(dut, mask=0x00ff, value=0x10, fault_xor=0x0001),
+        enable(dut),
+        play(dut, log, [0x10]),
+        clear(dut),
+        check())
+    assert values == [0] # History slots are only valid below fault_count.
+
+def test_history_can_be_disabled():
+    dut = DUT(with_history=False)
+    assert not hasattr(dut.inj, "history_index")
+    assert dut.inj.config()["history"] == 0
+    assert DUT().inj.config()["history"] == 1
+
 def test_group_selection():
     dut, out = DUT(), []
     def tb():

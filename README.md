@@ -20,8 +20,8 @@ LiteInjector adds bit-accurate, cycle-accurate fault injection to SoCs built wit
 - Probe and fault any Migen signal, or an instrumented signal of a Verilog IP
 - Triggers on values with "don't care" bits, rising and falling edges, with a delay and a duration in cycles
 - Five fault models (bit set, reset, flip, random flip, value), combinable in a single trigger
-- Chained triggers for multi-fault attacks, without rebuilding the bitstream
-- Command line, Python API and campaign runner with target observation and CSV reports
+- Chained triggers for multi-fault attacks (`--then`), without rebuilding the bitstream, with the cycle and data of every fault
+- Command line with an interactive shell, Python API and campaign runner with target observation and CSV reports
 
 ## Quick start
 

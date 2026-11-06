@@ -125,6 +125,7 @@ class _TriggerCore(Module):
         self.hit_count     = Signal(32)
         self.fault_count   = Signal(32)
         self.hit_timestamp = Signal(32)
+        self.cycles        = Signal(32) # Cycles since the injector was armed.
 
         # # #
 
@@ -232,7 +233,7 @@ class _TriggerCore(Module):
         ]
 
         # Counters and timestamp (cycles since the injector was armed).
-        cycles   = Signal(32)
+        cycles   = self.cycles
         enable_d = Signal()
         self.sync += [
             enable_d.eq(self.enable),
@@ -277,6 +278,7 @@ class _Trigger(Module, AutoCSR):
         self.mem_duration    = CSRStorage(bits_for(duration_depth))
         self.mem_flags       = CSRStorage(1)
         self.mem_full        = CSRStatus()
+        self.loaded          = CSRStatus(32) # Entries pushed since the last clear.
 
         # Status.
         self.done          = CSRStatus() # No entry left and no fault in progress.
@@ -314,6 +316,15 @@ class _Trigger(Module, AutoCSR):
             self.mem_full.status.eq(~mem.writable),
         ]
 
+        # Number of entries pushed since the last clear, to report the progress of a sequence.
+        loaded = Signal(32)
+        self.sync += If(self.clear.re,
+            loaded.eq(0)
+        ).Elif(self.mem_write.re & mem.writable,
+            loaded.eq(loaded + 1)
+        )
+        self.comb += self.loaded.status.eq(loaded)
+
         # Sequencer.
         core = _TriggerCore(data_width, offset_depth, duration_depth, with_lfsr)
         if clock_domain != "sys":
@@ -350,6 +361,8 @@ class _Trigger(Module, AutoCSR):
         self.output_hit   = core.output_hit
         self.inject_start = core.inject_start
         self.offset       = core.entry.offset
+        self.cycles       = core.cycles
+        self.fault_index  = core.fault_count # Index of the next fault (number of faults so far).
 
         # Output.
         self.comb += [
@@ -377,12 +390,13 @@ class _Injector(Module, AutoCSR):
 
 class LiteInjector(Module, AutoCSR):
     def __init__(self, groups, depth, clock_domain="sys", register=False, csr_csv="injector.csv",
-        offset_depth=500, duration_depth=255, with_lfsr=True):
+        offset_depth=500, duration_depth=255, with_lfsr=True, with_history=True):
         self.groups         = groups = self.format_groups(groups)
         self.depth          = depth
         self.offset_depth   = offset_depth
         self.duration_depth = duration_depth
         self.with_lfsr      = with_lfsr
+        self.with_history   = with_history
 
         self.data_width = data_width = max([sum([len(s) for s in g]) for g in groups.values()])
 
@@ -391,6 +405,14 @@ class LiteInjector(Module, AutoCSR):
         # Data captured on the first cycle of the last fault (before and after injection).
         self.capture_before = CSRStatus(data_width)
         self.capture_after  = CSRStatus(data_width)
+
+        # History of the faults of the current sequence: one slot per fault (`depth` slots), read
+        # back by selecting a slot with history_index. Reading does not modify anything.
+        if with_history:
+            self.history_index     = CSRStorage(max(1, bits_for(depth - 1)))
+            self.history_timestamp = CSRStatus(32)
+            self.history_before    = CSRStatus(data_width)
+            self.history_after     = CSRStatus(data_width)
 
         # # #
 
@@ -447,6 +469,23 @@ class LiteInjector(Module, AutoCSR):
             self.capture_after.status.eq(_cdc_to(self, after, clock_domain, "sys")),
         ]
 
+        # History: slot N holds (cycle, data before, data after) of the Nth fault since the last
+        # clear. Faults beyond `depth` are not recorded (fault_count still counts them).
+        if with_history:
+            mem   = Memory(32 + 2*data_width, depth)
+            wport = mem.get_port(write_capable=True, clock_domain=clock_domain)
+            rport = mem.get_port(clock_domain="sys")
+            self.specials += [mem, wport, rport]
+            self.comb += [
+                wport.adr.eq(self.trigger.fault_index),
+                wport.dat_w.eq(Cat(self.trigger.cycles, self.injector.sink.data, self.injector.output)),
+                wport.we.eq(self.trigger.inject_start & (self.trigger.fault_index < depth)),
+                rport.adr.eq(self.history_index.storage),
+                self.history_timestamp.status.eq(rport.dat_r[:32]),
+                self.history_before.status.eq(rport.dat_r[32:32 + data_width]),
+                self.history_after.status.eq(rport.dat_r[32 + data_width:]),
+            ]
+
     def format_groups(self, groups):
         if not isinstance(groups, dict):
             groups = {0 : groups}
@@ -478,6 +517,7 @@ class LiteInjector(Module, AutoCSR):
             "offset_depth"   : self.offset_depth,
             "duration_depth" : self.duration_depth,
             "lfsr"           : int(self.with_lfsr),
+            "history"        : int(self.with_history),
         }
 
     def export_csv(self, vns, filename):

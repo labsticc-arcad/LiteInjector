@@ -112,7 +112,29 @@ class LiteInjectorDriver:
         status["armed"] = bool(self._read("trigger_enable"))
         status["capture_before"] = self._read("capture_before")
         status["capture_after"]  = self._read("capture_after")
+        # Triggers pushed since the last clear (cores built before this register existed: unknown).
+        status["loaded"] = self._read("trigger_loaded") if "trigger_loaded" in self.csrs else None
         return status
+
+    def history(self):
+        """Faults of the current sequence, in order: [{"index", "timestamp", "before", "after"}].
+
+        The timestamp is the cycle of the fault counted from arming. The core records at most
+        `depth` faults, `status()["fault_count"]` tells whether some were not recorded. Reading
+        does not modify the core.
+        """
+        if not self.layout.with_history or "history_index" not in self.csrs:
+            raise RuntimeError("This core was built without fault history (with_history=False or an older LiteInjector).")
+        events = []
+        for index in range(min(self._read("trigger_fault_count"), self.layout.depth)):
+            self._write("history_index", index)
+            events.append({
+                "index"     : index,
+                "timestamp" : self._read("history_timestamp"),
+                "before"    : self._read("history_before"),
+                "after"     : self._read("history_after"),
+            })
+        return events
 
     # Legacy API -----------------------------------------------------------------------------------
 

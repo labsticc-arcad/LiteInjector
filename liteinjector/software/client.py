@@ -88,6 +88,10 @@ class LiteInjectorClient:
     def status(self):
         return self.driver.status()
 
+    def history(self):
+        """Cycle and probed data (before/after) of every fault of the current sequence."""
+        return self.driver.history()
+
     # Target control -------------------------------------------------------------------------------
 
     def reset_target(self, delay=0.5):

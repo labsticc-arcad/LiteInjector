@@ -22,8 +22,9 @@ with LiteInjectorClient(host="localhost", port=1234, csr_csv="csr.csv", config_c
 ```
 
 - `inject(triggers, group=0, seed=None)` disarms, clears the pending triggers, writes the new ones and arms.
-- `configure(...)` does the same without arming, `arm()`, `disarm()`, `clear()`, `wait(timeout)`, `status()` and `reset_target()` are also available.
-- A list of triggers is a multi-fault attack: they are applied one after the other.
+- `configure(...)` does the same without arming, `arm()`, `disarm()`, `clear()`, `wait(timeout)`, `status()`, `history()` and `reset_target()` are also available.
+- A list of triggers is a multi-fault attack: they are applied one after the other. `status()["loaded"]` is the number of triggers loaded and `status()["fault_count"]` the number already applied.
+- `history()` returns one `{"index", "timestamp", "before", "after"}` dict per fault of the sequence (cycle since arming, probed data word before and after). It raises `RuntimeError` for a core built with `with_history=False`.
 
 ## Describe triggers
 

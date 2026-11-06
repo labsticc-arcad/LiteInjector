@@ -81,6 +81,14 @@ class Layout:
     def with_lfsr(self):
         return bool(self.config.get("lfsr", 0))
 
+    @property
+    def depth(self):
+        return self.config.get("depth", 16)
+
+    @property
+    def with_history(self):
+        return bool(self.config.get("history", 0))
+
     # Signals --------------------------------------------------------------------------------------
 
     def signals(self, group=0):

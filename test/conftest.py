@@ -9,6 +9,7 @@ config,None,depth,16
 config,None,offset_depth,500
 config,None,duration_depth,255
 config,None,lfsr,{lfsr}
+config,None,history,{history}
 signal,0,main_sig_a,8
 signal,0,main_sig_b,8
 signal,1,main_other,16
@@ -18,7 +19,8 @@ CSRS = ["mux_value", "trigger_enable", "trigger_clear", "trigger_seed", "trigger
     "trigger_mem_mask", "trigger_mem_value", "trigger_mem_r_edge_mask", "trigger_mem_f_edge_mask",
     "trigger_mem_fault_and", "trigger_mem_fault_or", "trigger_mem_fault_xor", "trigger_mem_offset",
     "trigger_mem_duration", "trigger_mem_flags", "trigger_mem_full", "trigger_done", "trigger_busy",
-    "trigger_hit_count", "trigger_fault_count", "trigger_hit_timestamp", "capture_before", "capture_after"]
+    "trigger_hit_count", "trigger_fault_count", "trigger_hit_timestamp", "capture_before", "capture_after",
+    "trigger_loaded", "history_index", "history_timestamp", "history_before", "history_after"]
 
 class FakeReg:
     def __init__(self, log, name):
@@ -41,9 +43,9 @@ class FakeRegs:
 
 @pytest.fixture
 def config_csv(tmp_path):
-    def make(version=2, lfsr=1):
+    def make(version=2, lfsr=1, history=1):
         path = tmp_path / "injector.csv"
-        path.write_text(CONFIG.format(version=version, lfsr=lfsr))
+        path.write_text(CONFIG.format(version=version, lfsr=lfsr, history=history))
         return str(path)
     return make
 

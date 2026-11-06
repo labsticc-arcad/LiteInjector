@@ -40,29 +40,96 @@ Configure one injection and arm the emulator. The pending triggers are cleared f
 | `--fault bit-value:SIGNAL=VALUE` | Replace a signal by a value, `x` digits keep the original bits. |
 | `--offset N` | Cycles between the condition and the fault (default 0). |
 | `--duration N` | Number of faulted cycles (default 1). |
+| `--then` | Start the next trigger of a chained injection, see below. |
 | `--group N` | Signal group (default 0). |
 | `--seed N` | Seed of the random generator for `bit-flip-random`. |
-| `--wait SECONDS` | Wait until the fault is applied, then print the status. |
-| `--dry-run` | Print the encoded trigger without connecting. |
+| `--wait SECONDS` | Wait until the faults are applied, then print the status. |
+| `--repeat N` | Run the whole sequence `N` times, with the seed incremented at each repetition (needs `--wait`). |
+| `--history` | After the wait, print the cycle and the data of every fault (needs `--wait`). |
+| `--dry-run` | Print the encoded triggers without connecting. |
 | `--json` | Status as JSON. |
 
 Fault models: `bit-set`, `bit-reset`, `bit-flip`, `bit-flip-random`, `bit-value`.
 
-`run FILE` takes the triggers from the `[[step]]` sections of a [campaign file](../campaign-file/) without sweep: use it for multi-fault attacks.
-
 ```console
 $ liteinjector_cli run --when ibus_adr=0x0000037A --offset 1 --fault bit-value:ibus_dat_r=0x00050C63
 $ liteinjector_cli run --rise irq:0 --offset 10 --duration 3 --fault bit-flip:pc:2,3
-$ liteinjector_cli run attack.toml --wait 10
 ```
+
+### Several faults in a row
+
+`--then` separates the triggers of a multi-fault attack. Each trigger has its own conditions, offset, duration and faults; the second one is armed once the first fault has been applied. The options of the whole injection (`--group`, `--seed`, `--wait`, `--repeat`, `--history`, `--json`) can be given before the first trigger or after the last one.
+
+```console
+$ liteinjector_cli run --when ibus_adr=0x0000037A --offset 1 --fault bit-flip:ibus_dat_r:3 \
+    --then --when ibus_adr=0x00000400 --duration 4 --fault bit-set:ibus_dat_r:0 \
+    --wait 5 --history
+```
+
+The triggers can also come from [campaign files](../campaign-file/) (the `[[step]]` sections, without sweep). Several files are chained in the order given:
+
+```console
+$ liteinjector_cli run attack.toml --wait 10
+$ liteinjector_cli run unlock.toml glitch.toml --wait 10
+```
+
+A file cannot be mixed with trigger options on the same command line. The number of triggers is limited by the `depth` of the core.
+
+### Repeat a sequence
+
+`--repeat N` runs the same sequence `N` times, one status (and history) per repetition, and exits with `2` if one of them timed out. The seed of `bit-flip-random` is incremented at each repetition. For parameter sweeps and automatic classification of the target behaviour, use `campaign`.
 
 ## `status`
 
-Armed, done, busy, number of hits and faults, cycle of the last fault since arming, data before and after the last fault. `--json` available.
+Armed, done, busy, number of hits and faults, cycle of the last fault since arming, data before and after the last fault. For a chained injection, the `sequence` line shows the progress, for example `2/3 trigger(s) fired`. `--json` available (the number of triggers loaded is `loaded`, `null` for a core built before this register existed).
+
+Reading the status never modifies the injector.
 
 ## `wait`
 
 Wait until every trigger has fired (`--timeout SECONDS`), then print the status.
+
+## `history`
+
+Cycle (counted from arming) and probed data before and after the fault, for every fault of the last sequence, with the number of cycles since the previous fault. `--group N` selects the group used to format the data, `--json` adds a `history` list to the status.
+
+```console
+$ liteinjector_cli history
+Fault history (2 fault(s)):
+  #0   cycle 1204                 before 0x00050c63  after 0x00000013
+  #1   cycle 1262       +58       before 0x00000513  after 0x00000512
+```
+
+The core records one fault per slot of its queue (`depth`). If more faults happen, the extra ones are counted by `fault_count` but not recorded, and the command says so. Reading the history does not modify the injector. It needs a core built with `with_history=True` (the default).
+
+## `shell`
+
+An interactive session that keeps the connection to `litex_server` open, to build a sequence step by step, arm it and inspect the result. `--group N` and `--seed N` set the initial values, `--offline` starts without connecting, to write and check triggers.
+
+| Command | Description |
+|---|---|
+| `add TRIGGER [--then TRIGGER ...]` | Append triggers (same options as `run`). Each one is checked against the signal layout. |
+| `load FILE...` | Append the steps of campaign files. |
+| `show [-v]` | Show the sequence (`-v`: encoded hardware entries). |
+| `remove N` | Remove trigger `N`. |
+| `clear` | Empty the sequence and the queue of the core. |
+| `arm` | Load the sequence in the core and arm it. |
+| `wait [SECONDS]` | Wait until every trigger has fired and show the status. |
+| `status`, `history` | Status and fault history. |
+| `disarm` | Disarm and clear the queue of the core (the sequence is kept). |
+| `group [N]`, `seed [N]`, `signals` | Settings and probed signals. |
+| `exit` | Leave the shell. |
+
+```console
+$ liteinjector_cli shell
+liteinjector> add --when ibus_adr=0x37A --offset 1 --fault bit-flip:ibus_dat_r:3
+liteinjector> add --when ibus_adr=0x400 --fault bit-set:ibus_dat_r:0
+liteinjector> arm
+liteinjector> wait 5
+liteinjector> history
+```
+
+An error in a command (unknown signal, bit out of range...) is reported and the session goes on. Commands can also be piped from a file: `liteinjector_cli shell < session.txt`.
 
 ## `disarm`
 

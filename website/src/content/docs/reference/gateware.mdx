@@ -22,6 +22,7 @@ self.add_csr("injector")
 | `offset_depth` | `500` | Maximum offset, in cycles. |
 | `duration_depth` | `255` | Maximum fault duration, in cycles. |
 | `with_lfsr` | `True` | Hardware random generator for `bit-flip-random`. |
+| `with_history` | `True` | Record the cycle and the data before and after each fault (one slot per queue entry, `depth` words of `32 + 2 * data_width` bits), read by `liteinjector_cli history`. |
 
 ## Outputs
 
@@ -52,11 +53,17 @@ Names as seen from the host (prefixed by the name of the core in the SoC, e.g. `
 | `trigger_mem_flags` | RW | Bit 0: random bit flip. |
 | `trigger_mem_write` | W | Push the entry in the queue. |
 | `trigger_mem_full` | R | Queue full. |
+| `trigger_loaded` | R | Entries pushed since the last clear. With `trigger_fault_count`, the progress of a sequence. |
 | `trigger_done` | R | Queue empty and no fault in progress. |
 | `trigger_busy` | R | Waiting for an offset, injecting or flushing. |
 | `trigger_hit_count`, `trigger_fault_count` | R | Trigger hits and faults since the last clear. |
 | `trigger_hit_timestamp` | R | Cycle of the last fault, counted from arming. |
 | `capture_before`, `capture_after` | R | Data word before and after the last fault. |
+| `history_index` | RW | Fault selected for the `history_*` registers (0 is the first fault since the last clear). |
+| `history_timestamp` | R | Cycle, counted from arming, of the selected fault. |
+| `history_before`, `history_after` | R | Data word before and after the selected fault. |
+
+The history registers (`with_history=True`) are valid for the indexes below `trigger_fault_count` and below `depth`. Selecting an index does not modify the core.
 
 ## Configuration file
 
@@ -69,6 +76,7 @@ config,None,depth,16
 config,None,offset_depth,500
 config,None,duration_depth,255
 config,None,lfsr,1
+config,None,history,1
 signal,0,main_basesoc_ibus_adr,30
 signal,0,main_basesoc_ibus_dat_r,32
 ```

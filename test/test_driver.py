@@ -81,3 +81,47 @@ def test_driver_encoding_matches_gateware(config_csv):
     run_simulation(dut, tb())
     assert faulted(log) == [1]
     assert log[1][3] == 0xa5 # High nibble forced, "x" nibble kept.
+
+# Sequence progress and fault history --------------------------------------------------------------
+
+def test_status_reports_loaded_triggers(config_csv):
+    drv, regs = make_driver(config_csv)
+    regs.d["injector_trigger_loaded"].value = 3
+    regs.d["injector_trigger_fault_count"].value = 2
+    assert drv.status()["loaded"] == 3
+
+def test_status_without_loaded_register(config_csv):
+    regs = FakeRegs()
+    del regs.d["injector_trigger_loaded"] # Core built before this register existed.
+    drv = LiteInjectorDriver(regs, "injector", config_csv=config_csv())
+    assert drv.status()["loaded"] is None
+
+class HistoryRegs(FakeRegs):
+    """history_index selects which recorded fault the history_* registers return."""
+    EVENTS = [(100, 0x5510, 0x5511), (130, 0x5500, 0x5502), (150, 0x1111, 0x1112)]
+    def __init__(self):
+        super().__init__()
+        for i, name in enumerate(["timestamp", "before", "after"]):
+            reg = self.d["injector_history_" + name]
+            reg.read = lambda i=i: self.EVENTS[self.d["injector_history_index"].value][i]
+
+def test_history_reads_every_fault_in_order(config_csv):
+    regs = HistoryRegs()
+    drv = LiteInjectorDriver(regs, "injector", config_csv=config_csv())
+    regs.d["injector_trigger_fault_count"].value = 2
+    assert drv.history() == [
+        {"index": 0, "timestamp": 100, "before": 0x5510, "after": 0x5511},
+        {"index": 1, "timestamp": 130, "before": 0x5500, "after": 0x5502},
+    ]
+
+def test_history_is_limited_to_the_queue_depth(config_csv):
+    regs = HistoryRegs()
+    drv = LiteInjectorDriver(regs, "injector", config_csv=config_csv())
+    drv.layout.config["depth"] = 2
+    regs.d["injector_trigger_fault_count"].value = 3 # One fault more than the core can record.
+    assert len(drv.history()) == 2
+
+def test_history_unavailable(config_csv):
+    drv, _ = make_driver(config_csv, history=0)
+    with pytest.raises(RuntimeError, match="without fault history"):
+        drv.history()

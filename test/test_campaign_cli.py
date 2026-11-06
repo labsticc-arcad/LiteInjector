@@ -192,3 +192,186 @@ def test_cli_campaign_dry_run(config_csv, tmp_path, capsys):
     assert main(["campaign", str(path), "--csv", config_csv(), "--dry-run"]) == 0
     out = capsys.readouterr().out
     assert "16 run(s)" in out and out.count("--- run") == 8
+
+# Chained triggers, repetitions, history and shell ---------------------------------------------------
+
+from liteinjector.software import liteinjector_cli
+from liteinjector.software.liteinjector_cli import (InjectorShell, parse_chain, print_history,
+    print_status)
+
+CHAIN = ["--when", "sig_a=0x10", "--offset", "2", "--fault", "bit-flip:sig_b:0",
+    "--then", "--when", "sig_a=0x20", "--duration", "3", "--fault", "bit-set:sig_b:7"]
+
+def test_parse_chain_gives_each_trigger_its_own_options():
+    first, second = parse_chain(CHAIN)
+    assert (first.offset, first.duration, first.when) == (2, 1, {"sig_a": "0x10"})
+    assert (second.offset, second.duration, second.when) == (0, 3, {"sig_a": "0x20"})
+    assert second.faults == [Fault("bit-set", "sig_b", [7])]
+
+def test_parse_chain_rejects_empty_and_foreign_options():
+    with pytest.raises(ValueError, match="Empty trigger 1"):
+        parse_chain(["--when", "sig_a=1", "--then"])
+    with pytest.raises(ValueError, match="unrecognized"):
+        parse_chain(["--when", "sig_a=1", "--wait", "3"])
+    extra = []
+    triggers = parse_chain(["--when", "sig_a=1", "--then", "--when", "sig_a=2", "--wait", "3"], extra)
+    assert len(triggers) == 2 and extra == ["--wait", "3"]
+
+def test_cli_run_then_dry_run(config_csv, capsys):
+    rc = main(["run", "--csv", config_csv(), "--dry-run"] + CHAIN + ["--wait", "5"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "Trigger 0:" in out and "Trigger 1:" in out
+    assert "fault_xor    0x0100" in out and "fault_or     0x8000" in out and "duration     3" in out
+
+def test_cli_run_then_errors(config_csv, capsys):
+    assert main(["run", "--csv", config_csv(), "--dry-run", "--when", "sig_a=1", "--then"]) == 1
+    assert "Empty trigger" in capsys.readouterr().err
+    # Every trigger is validated before connecting.
+    assert main(["run", "--csv", config_csv(), "--dry-run", "--when", "sig_a=1", "--fault", "bit-flip:sig_b:99",
+        "--then", "--when", "sig_a=2"]) == 1
+
+def test_cli_run_several_files(config_csv, tmp_path, capsys):
+    paths = []
+    for i, value in enumerate(["0x10", "0x20"]):
+        path = tmp_path / f"step{i}.json"
+        path.write_text(json.dumps({"step": [{"when": {"sig_a": value},
+            "fault": {"model": "bit-flip", "signal": "sig_b", "bits": [i]}}]}))
+        paths.append(str(path))
+    assert main(["run", *paths, "--csv", config_csv(), "--dry-run"]) == 0
+    out = capsys.readouterr().out
+    assert "Trigger 0:" in out and "Trigger 1:" in out and "0x0100" in out and "0x0200" in out
+    assert main(["run", paths[0], "--when", "sig_a=1", "--csv", config_csv(), "--dry-run"]) == 1
+    assert "not both" in capsys.readouterr().err
+
+def test_cli_repeat_and_history_need_wait(config_csv, capsys):
+    base = ["run", "--csv", config_csv(), "--dry-run", "--when", "sig_a=1", "--fault", "bit-flip:sig_b:0"]
+    assert main(base + ["--repeat", "3"]) == 1
+    assert "--wait" in capsys.readouterr().err
+    assert main(base + ["--history"]) == 1
+    assert main(base + ["--repeat", "0", "--wait", "1"]) == 1
+    assert main(base + ["--repeat", "3", "--wait", "1"]) == 0
+    assert "run 3 times" in capsys.readouterr().out
+
+class FakeSequenceClient:
+    """Client double that fires every loaded trigger and records the calls."""
+    EVENTS = [{"index": 0, "timestamp": 100, "before": 0x5510, "after": 0x5511},
+              {"index": 1, "timestamp": 130, "before": 0x5500, "after": 0x5502}]
+    def __init__(self, layout, fire=True):
+        self.layout, self.fire, self.calls, self.loaded = layout, fire, [], 0
+    def __enter__(self):
+        return self
+    def __exit__(self, *exc):
+        pass
+    def inject(self, triggers, group=0, seed=None):
+        self.loaded = len(triggers)
+        self.calls.append(("inject", len(triggers), group, seed))
+    def wait(self, timeout=None):
+        self.calls.append(("wait", timeout))
+        return self.fire
+    def clear(self):
+        self.calls.append(("clear",))
+    def disarm(self):
+        self.calls.append(("disarm",))
+    def status(self):
+        n = self.loaded if self.fire else 1
+        return dict(done=self.fire, busy=False, armed=True, hit_count=n, fault_count=n, hit_timestamp=130,
+            capture_before=0x5500, capture_after=0x5502, loaded=self.loaded)
+    def history(self):
+        return self.EVENTS[:self.status()["fault_count"]]
+
+@pytest.fixture
+def fake_client(monkeypatch, layout):
+    client = FakeSequenceClient(layout)
+    monkeypatch.setattr(liteinjector_cli, "connect", lambda args: client)
+    return client
+
+def test_cli_run_repeat_reseeds_each_repetition(config_csv, fake_client, capsys):
+    rc = main(["run", "--csv", config_csv(), "--when", "sig_a=1", "--fault", "bit-flip:sig_b:0", "--then",
+        "--when", "sig_a=2", "--seed", "10", "--repeat", "3", "--wait", "1"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert [c[3] for c in fake_client.calls if c[0] == "inject"] == [10, 11, 12]
+    assert out.count("--- Repetition") == 3 and out.count("Trigger 0:") == 1
+    assert "2/2 trigger(s) fired" in out
+
+def test_cli_run_timeout_exit_code(config_csv, fake_client, capsys):
+    fake_client.fire = False
+    rc = main(["run", "--csv", config_csv(), "--when", "sig_a=1", "--wait", "0.1"])
+    assert rc == 2
+
+def test_cli_run_history(config_csv, fake_client, capsys):
+    main(["run", "--csv", config_csv(), "--when", "sig_a=1", "--then", "--when", "sig_a=2", "--wait", "1", "--history"])
+    out = capsys.readouterr().out
+    assert "Fault history (2 fault(s))" in out
+    assert "cycle 100" in out and "+30" in out and "before 0x5500  after 0x5502" in out
+
+def test_cli_history_json(config_csv, fake_client, capsys):
+    fake_client.loaded = 2
+    assert main(["history", "--csv", config_csv(), "--json"]) == 0
+    data = json.loads(capsys.readouterr().out)
+    assert [e["timestamp"] for e in data["history"]] == [100, 130] and data["loaded"] == 2
+
+def test_cli_history_unavailable(config_csv, capsys):
+    assert main(["history", "--csv", config_csv(history=0)]) == 1
+    assert "without fault history" in capsys.readouterr().err
+
+def test_status_shows_sequence_progress(capsys):
+    status = dict(done=False, busy=True, fault_count=1, loaded=3)
+    print_status(status, False)
+    out = capsys.readouterr().out
+    assert "1/3 trigger(s) fired" in out and "loaded" not in out
+    print_status(dict(status, loaded=None), False)
+    assert "sequence" not in capsys.readouterr().out
+
+def test_history_reports_unrecorded_faults(capsys):
+    print_history(FakeSequenceClient.EVENTS, 16, fault_count=5)
+    assert "3 more fault(s) not recorded" in capsys.readouterr().out
+
+def run_shell(layout, client, *lines):
+    shell = InjectorShell(layout, client)
+    for line in lines:
+        shell.onecmd(line)
+    return shell
+
+def test_shell_builds_and_arms_a_sequence(layout, capsys):
+    client = FakeSequenceClient(layout)
+    shell = run_shell(layout, client,
+        "add --when sig_a=1 --fault bit-flip:sig_b:0 --then --when sig_a=2 --offset 3 --fault bit-set:sig_b:7",
+        "add --rise sig_a:0 --fault bit-reset:sig_b:1",
+        "remove 2", "show", "seed 0x10", "arm", "wait 1", "history")
+    out = capsys.readouterr().out
+    assert len(shell.pending) == 2
+    assert "Removed trigger 2" in out and "Injector armed with 2 trigger(s)" in out
+    assert client.calls[0] == ("inject", 2, 0, 0x10)
+    assert "2/2 trigger(s) fired" in out and "Fault history (2 fault(s))" in out
+
+def test_shell_survives_errors(layout, capsys):
+    shell = run_shell(layout, FakeSequenceClient(layout),
+        "add --when nosuchsignal=1", "add --bad", "add", "remove 9", "group 7", "arm", "load")
+    out = capsys.readouterr().out
+    assert shell.pending == []
+    assert out.count("Error:") == 7
+
+def test_shell_offline_cannot_arm(layout, capsys):
+    shell = InjectorShell(layout, None)
+    shell.onecmd("add --when sig_a=1")
+    shell.onecmd("arm")
+    assert "offline" in capsys.readouterr().out
+    assert shell.onecmd("exit") is True
+
+def test_shell_group_and_clear(layout, capsys):
+    client = FakeSequenceClient(layout)
+    shell = run_shell(layout, client, "add --when sig_a=1", "group 1")
+    assert "Error" in capsys.readouterr().out and shell.group == 0 # sig_a is not in group 1.
+    shell.onecmd("clear")
+    assert shell.pending == [] and ("clear",) in client.calls
+    shell.onecmd("group 1")
+    assert shell.group == 1
+
+def test_shell_command_line_entry(config_csv, monkeypatch, capsys):
+    import io
+    monkeypatch.setattr("sys.stdin", io.StringIO("add --when sig_a=1 --fault bit-flip:sig_b:0\nshow -v\nexit\n"))
+    assert main(["shell", "--csv", config_csv(), "--offline"]) == 0
+    out = capsys.readouterr().out
+    assert "Trigger 0:" in out and "fault_xor    0x0100" in out
